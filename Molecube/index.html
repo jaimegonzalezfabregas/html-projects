@@ -1,0 +1,647 @@
+<html>
+    <head>
+        <style>
+            canvas {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            body{
+                width: 100%;
+                height: 100%;
+                margin: 0px;
+                padding: 0px;
+            }
+        </style>
+    </head>
+    <body>  
+        <canvas id="canvas" width="1920" height="1080"></canvas>
+        <script>
+	    var canvas = document.getElementById("canvas");
+            var ctx = canvas.getContext("2d");
+            var ratonx = 0;
+            var ratony = 0;
+            var topFPS = 60;
+            var fps = 60;
+            var ticklength = 1000/fps
+            var d = new Date();
+            var waittime = 0;
+            var animation = "free";
+            var animationmaxtime = 400; 
+            var animationtime = 0;
+            var a = 1;
+            var camara = [10,0,0];
+            var keys = [];
+            var ballsize = 500;
+            var publicScreenPos = [];
+            var selected = "";
+            var timer = 0;
+            var timerrising = true;
+            
+            //var kk = 0;
+            window.onkeyup = function(e) { keys[e.keyCode] = false;}
+            window.onkeydown = function(e) { keys[e.keyCode] = true;}
+            // 
+            //               a d g
+            //              b e h 
+            //             c f i  
+            //                    
+            //               j m ñ
+            //              k + o 
+            //             l n p  
+            //                    
+            //               q t w
+            //              r u x 
+            //             s v y  
+            var molecube = {
+                a :"black",
+                b :"red",
+                c :"green",
+                d :"white",
+                f :"blue",
+                g :"purple",
+                h :"blue",
+                i :"cyan",
+                j :"cyan",
+                k :"black",
+                l :"yellow",
+                m :"orange",
+                n :"yellow",
+                ñ :"red",
+                o :"white",
+                p :"orange",
+                q :"yellow",
+                r :"blue",
+                s :"white",
+                t :"purple",
+                u :"cyan",
+                v :"red",
+                w :"green",
+                x :"black",
+                y :"orange",
+                topFace : function() {
+                    return[
+                        a,b,c,
+                        d,e,f,
+                        g,h,i
+                    ]
+                },
+                bottomFace : function() {
+                    return[
+                        q,r,s,
+                        t,u,v,
+                        w,x,y
+                    ]
+                },
+                leftFace : function() {
+                    return[
+                        a,b,c,
+                        j,k,l,
+                        q,r,s
+                    ]
+                },
+                rightFace : function() {
+                    return[
+                        g,h,i,
+                        ñ,o,p,
+                        w,x,y
+                    ]
+                },
+                frontFace : function() {
+                    return[
+                        c,f,i,
+                        l,n,p,
+                        s,v,y
+                    ]
+                },
+                backFace : function() {
+                    return[
+                        a,d,g,
+                        j,m,ñ,
+                        q,t,w
+                    ]
+                },
+                Solved : function () {
+                    var faces = [this.topface(),this.bottomFace(),this.rightFace(),this.leftFace(),this.frontFace,this.backFace()];
+                    var solved = true;
+                    for (let face = 0; face < faces.length; face++) {
+                        const element = faces[face];
+                        if(solved) for (let i = 0; i < element.length; i++) {
+                            const test = element[i];
+                            if(solved) for (let j = 0; j < element.length; j++) {
+                                const comparation = element[j];
+                                if(j!=i&&comparation == test){
+                                    solved = false;
+                                }
+                            }
+                        }
+                    }
+                    return solved;
+                },
+                drawcordinates : function(){
+                    var sinordenar = [
+                        // casilla                  x  y  z camera
+                        [this.a,perspectiveManager(-1, 1, 1,camara,"a"),"a"],
+                        [this.b,perspectiveManager( 0, 1, 1,camara,"b"),"b"],
+                        [this.c,perspectiveManager( 1, 1, 1,camara,"c"),"c"],
+                        [this.d,perspectiveManager(-1, 0, 1,camara,"d"),"d"],
+                        [this.e,perspectiveManager( 0, 0, 1,camara,"e"),"e"],
+                        [this.f,perspectiveManager( 1, 0, 1,camara,"f"),"f"],
+                        [this.g,perspectiveManager(-1,-1, 1,camara,"g"),"g"],
+                        [this.h,perspectiveManager( 0,-1, 1,camara,"h"),"h"],
+                        [this.i,perspectiveManager( 1,-1, 1,camara,"i"),"i"],
+                        [this.j,perspectiveManager(-1, 1, 0,camara,"j"),"j"],
+                        [this.k,perspectiveManager( 0, 1, 0,camara,"k"),"k"],
+                        [this.l,perspectiveManager( 1, 1, 0,camara,"l"),"l"],
+                        [this.m,perspectiveManager(-1, 0, 0,camara,"m"),"m"],
+                        [this.n,perspectiveManager( 1, 0, 0,camara,"n"),"n"],
+                        [this.ñ,perspectiveManager(-1,-1, 0,camara,"ñ"),"ñ"],
+                        [this.o,perspectiveManager( 0,-1, 0,camara,"o"),"o"],
+                        [this.p,perspectiveManager( 1,-1, 0,camara,"p"),"p"],
+                        [this.q,perspectiveManager(-1, 1,-1,camara,"q"),"q"],
+                        [this.r,perspectiveManager( 0, 1,-1,camara,"r"),"r"],
+                        [this.s,perspectiveManager( 1, 1,-1,camara,"s"),"s"],
+                        [this.t,perspectiveManager(-1, 0,-1,camara,"t"),"t"],
+                        [this.u,perspectiveManager( 0, 0,-1,camara,"u"),"u"],
+                        [this.v,perspectiveManager( 1, 0,-1,camara,"v"),"v"],
+                        [this.w,perspectiveManager(-1,-1,-1,camara,"w"),"w"],
+                        [this.x,perspectiveManager( 0,-1,-1,camara,"x"),"x"],
+                        [this.y,perspectiveManager( 1,-1,-1,camara,"y"),"y"],
+                    ];
+                    return sinordenar;
+                },
+                turnclockup : function () {
+                    ret = Object.assign({},this);
+                    var orden = ["a","d","g","h","i","f","c","b"].reverse();
+                    ret[orden[0]] = this[orden[6]];
+                    ret[orden[2]] = this[orden[0]];
+                    ret[orden[4]] = this[orden[2]];
+                    ret[orden[6]] = this[orden[4]];
+                    ret[orden[1]] = this[orden[7]];
+                    ret[orden[3]] = this[orden[1]];
+                    ret[orden[5]] = this[orden[3]];
+                    ret[orden[7]] = this[orden[5]];
+                    return ret;
+                },
+                turnunclockup : function () {
+                    return this.turnclockup().turnclockup().turnclockup();
+                },
+                turnclockdown : function () {
+                    ret = Object.assign({},this);
+                    var orden = ["q","r","s","v","y","x","w","t"].reverse();
+                    ret[orden[0]] = this[orden[6]];
+                    ret[orden[2]] = this[orden[0]];
+                    ret[orden[4]] = this[orden[2]];
+                    ret[orden[6]] = this[orden[4]];
+                    ret[orden[1]] = this[orden[7]];
+                    ret[orden[3]] = this[orden[1]];
+                    ret[orden[5]] = this[orden[3]];
+                    ret[orden[7]] = this[orden[5]];
+                    return ret;
+                },
+                turnunclockdown : function () {
+                    return this.turnclockdown().turnclockdown().turnclockdown();
+                },
+                turnclockleft : function () {
+                    ret = Object.assign({},this);
+                    var orden = ["a","b","c","l","s","r","q","j"].reverse();
+                    ret[orden[0]] = this[orden[6]];
+                    ret[orden[2]] = this[orden[0]];
+                    ret[orden[4]] = this[orden[2]];
+                    ret[orden[6]] = this[orden[4]];
+                    ret[orden[1]] = this[orden[7]];
+                    ret[orden[3]] = this[orden[1]];
+                    ret[orden[5]] = this[orden[3]];
+                    ret[orden[7]] = this[orden[5]];
+                    return ret;
+                },
+                turnunclockleft : function () {
+                    return this.turnclockleft().turnclockleft().turnclockleft();
+                },
+                turnclockright : function () {
+                    ret = Object.assign({},this);
+                    var orden = ["i","h","g","ñ","w","x","y","p"].reverse();
+                    ret[orden[0]] = this[orden[6]];
+                    ret[orden[2]] = this[orden[0]];
+                    ret[orden[4]] = this[orden[2]];
+                    ret[orden[6]] = this[orden[4]];
+                    ret[orden[1]] = this[orden[7]];
+                    ret[orden[3]] = this[orden[1]];
+                    ret[orden[5]] = this[orden[3]];
+                    ret[orden[7]] = this[orden[5]];
+                    return ret;
+                },
+                turnunclockright : function () {
+                    return this.turnclockright().turnclockright().turnclockright();
+                },
+                turnclockfront : function () {
+                    ret = Object.assign({},this);
+                    var orden = ["f","i","p","y","v","s","l","c"].reverse();
+                    ret[orden[0]] = this[orden[6]];
+                    ret[orden[2]] = this[orden[0]];
+                    ret[orden[4]] = this[orden[2]];
+                    ret[orden[6]] = this[orden[4]];
+                    ret[orden[1]] = this[orden[7]];
+                    ret[orden[3]] = this[orden[1]];
+                    ret[orden[5]] = this[orden[3]];
+                    ret[orden[7]] = this[orden[5]];
+                    return ret;
+                },
+                turnunclockfront : function () {
+                    return this.turnclockfront().turnclockfront().turnclockfront();
+                },
+                turnclockback : function () {
+                    ret = Object.assign({},this);
+                    var orden = ["g","d","a","j","q","t","w","ñ"].reverse();
+                    ret[orden[0]] = this[orden[6]];
+                    ret[orden[2]] = this[orden[0]];
+                    ret[orden[4]] = this[orden[2]];
+                    ret[orden[6]] = this[orden[4]];
+                    ret[orden[1]] = this[orden[7]];
+                    ret[orden[3]] = this[orden[1]];
+                    ret[orden[5]] = this[orden[3]];
+                    ret[orden[7]] = this[orden[5]];
+                    return ret;
+                },
+                turnunclockback : function () {
+                    return this.turnclockback().turnclockback().turnclockback();
+                },
+                
+            }
+            
+            function perspectiveManager(dx, dy, dz,c,d) {
+                //all the bulllshit of the turning
+                var turndegree = (animationtime/animationmaxtime)*Math.PI/2
+                
+                if(animation == "clockup"){
+                    if(d=="a"||d=="b"||d=="c"||d=="d"||d=="f"||d=="g"||d=="h"||d=="i"){
+                        var r = distance2d(dx,dy,0,0);
+                        var initialA = Math.atan2(dx,dy);
+                        dx = Math.sin(initialA-turndegree)*r; 
+                        dy = Math.cos(initialA-turndegree)*r;
+                    }
+                }else if(animation == "clockdown"){
+                    if(d=="q"||d=="t"||d=="w"||d=="r"||d=="x"||d=="s"||d=="v"||d=="y"){
+                        var r = distance2d(dx,dy,0,0);
+                        var initialA = Math.atan2(dx,dy);
+                        dx = Math.sin(initialA+turndegree)*r; 
+                        dy = Math.cos(initialA+turndegree)*r;
+                    }
+                }else if(animation == "clockleft"){
+                    if(d=="a"||d=="b"||d=="c"||d=="j"||d=="l"||d=="q"||d=="r"||d=="s"){
+                        var r = distance2d(dx,dz,0,0);
+                        var initialA = Math.atan2(dx,dz);
+                        dx = Math.sin(initialA+turndegree)*r; 
+                        dz = Math.cos(initialA+turndegree)*r;
+                    }
+                }else if(animation == "clockright"){
+                    if(d=="g"||d=="i"||d=="h"||d=="ñ"||d=="p"||d=="w"||d=="x"||d=="y"){
+                        var r = distance2d(dx,dz,0,0);
+                        var initialA = Math.atan2(dx,dz);
+                        dx = Math.sin(initialA-turndegree)*r; 
+                        dz = Math.cos(initialA-turndegree)*r;
+                    }
+                }else if(animation == "clockfront"){
+                    if(d=="c"||d=="f"||d=="i"||d=="l"||d=="p"||d=="s"||d=="v"||d=="y"){
+                        var r = distance2d(dy,dz,0,0);
+                        var initialA = Math.atan2(dy,dz);
+                        dy = Math.sin(initialA-turndegree)*r; 
+                        dz = Math.cos(initialA-turndegree)*r;
+                    }
+                }else if(animation == "clockback"){
+                    if(d=="a"||d=="d"||d=="g"||d=="j"||d=="q"||d=="ñ"||d=="t"||d=="w"){
+                        var r = distance2d(dy,dz,0,0);
+                        var initialA = Math.atan2(dy,dz);
+                        dy = Math.sin(initialA+turndegree)*r; 
+                        dz = Math.cos(initialA+turndegree)*r;
+                    }
+                }else if(animation == "unclockup"){
+                    if(d=="a"||d=="b"||d=="c"||d=="d"||d=="f"||d=="g"||d=="h"||d=="i"){
+                        var r = distance2d(dx,dy,0,0);
+                        var initialA = Math.atan2(dx,dy);
+                        dx = Math.sin(initialA+turndegree)*r; 
+                        dy = Math.cos(initialA+turndegree)*r;
+                    }
+                }else if(animation == "unclockdown"){
+                    if(d=="q"||d=="t"||d=="w"||d=="r"||d=="x"||d=="s"||d=="v"||d=="y"){
+                        var r = distance2d(dx,dy,0,0);
+                        var initialA = Math.atan2(dx,dy);
+                        dx = Math.sin(initialA-turndegree)*r; 
+                        dy = Math.cos(initialA-turndegree)*r;
+                    }
+                }else if(animation == "unclockleft"){
+                    if(d=="a"||d=="b"||d=="c"||d=="j"||d=="l"||d=="q"||d=="r"||d=="s"){
+                        var r = distance2d(dx,dz,0,0);
+                        var initialA = Math.atan2(dx,dz);
+                        dx = Math.sin(initialA-turndegree)*r; 
+                        dz = Math.cos(initialA-turndegree)*r;
+                    }
+                }else if(animation == "unclockright"){
+                    if(d=="g"||d=="i"||d=="h"||d=="ñ"||d=="p"||d=="w"||d=="x"||d=="y"){
+                        var r = distance2d(dx,dz,0,0);
+                        var initialA = Math.atan2(dx,dz);
+                        dx = Math.sin(initialA+turndegree)*r; 
+                        dz = Math.cos(initialA+turndegree)*r;
+                    }
+                }else if(animation == "unclockfront"){
+                    if(d=="c"||d=="f"||d=="i"||d=="l"||d=="p"||d=="s"||d=="v"||d=="y"){
+                        var r = distance2d(dy,dz,0,0);
+                        var initialA = Math.atan2(dy,dz);
+                        dy = Math.sin(initialA+turndegree)*r; 
+                        dz = Math.cos(initialA+turndegree)*r;
+                    }
+                }else if(animation == "unclockback"){
+                    if(d=="a"||d=="d"||d=="g"||d=="j"||d=="q"||d=="ñ"||d=="t"||d=="w"){
+                        var r = distance2d(dy,dz,0,0);
+                        var initialA = Math.atan2(dy,dz);
+                        dy = Math.sin(initialA-turndegree)*r; 
+                        dz = Math.cos(initialA-turndegree)*r;
+                    }
+                }
+                
+                
+                //printing it to the screen
+                var cpx = c[0]
+                var cry = c[1];
+                var crz = c[2];
+
+                var r = distance2d(dx,dy,0,0);
+                var initialA =Math.atan2(dx,dy);
+                dx = Math.sin(initialA+crz)*r; 
+                dy = Math.cos(initialA+crz)*r; 
+                
+                var r = distance2d(dx,dz,0,0);
+                var initialA =Math.atan2(dx,dz);
+                dx = Math.sin(initialA+cry)*r; 
+                dz = Math.cos(initialA+cry)*r; 
+
+                dx = dx-cpx;
+
+                if(dx>-a){
+                    return[0,0,0];
+                }
+                
+                var fx = (dy/dx)*a
+                var fy = (dz/dx)*a
+                //console.log(fx,fy,a,dy,dx,dz);
+                
+                return [fx,fy,distance3d(cpx,0,0,dx,dy,dz)];
+            }
+            tick();
+            function distance2d(x1,y1,x2,y2){
+                return Math.sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
+            }
+            function distance3d(x1,y1,z1,x2,y2,z2) {
+                return distance2d(0,distance2d(x1,y1,x2,y2),z2-z1,0);
+            }            
+            function tick() {
+                ctx.fillRect(0, 0, canvas.height, canvas.width);
+                canvas.height = canvas.clientHeight;
+                canvas.width = canvas.clientWidth;
+                if(keys[37])camara[2]=camara[2] + 1/20// <
+                if(keys[39])camara[2]=camara[2] - 1/20// >
+                if(keys[38])camara[1]=camara[1] + 1/20// /\
+                if(keys[40])camara[1]=camara[1] - 1/20// V
+                if(keys[87])camara[0]=camara[0] - 1/20// w
+                if(keys[83])camara[0]=camara[0] + 1/20// s
+                ///if(keys[81])ballsize--//q
+                //if(keys[65])ballsize++//a
+                //if(keys[69])a = a-1/20//e
+                //if(keys[68])a = a+1/20//d
+
+                var initialtime = d.getTime();
+                
+                
+                var ToDo = molecube.drawcordinates();
+                //console.log(ToDo);
+                organize(ToDo,0);
+                //console.log(ToDo);
+                publicScreenPos = ToDo;
+                for (let i = 0; i < ToDo.length; i++) {
+                    const element = ToDo[i];
+                    const ic = getcolor(element[0]);
+                    var oc = rgb(0,0,0)
+                    if(element[2]==selected) oc = rgb((timer/30)*255,(timer/30)*255,(timer/30)*255);
+                    const x = element[1][0]*500+canvas.width/2;
+                    const y = element[1][1]*500+canvas.height/2;
+                    const r = ballsize/element[1][2];
+                    //console.log(x,y,r,c);
+                    drawCircleXYR(x,y,r,ic,oc);
+                    //typeText(x,y,element[2]);
+                }
+                //manual usage
+                if(animation == "free"){
+                    if(keys[65]==true){
+                        if(selected == "e"){
+                            molecube = molecube.turnclockup();
+                            animation = "clockup";
+                            animationtime = animationmaxtime;
+                        }
+                        if(selected == "u"){
+                            molecube = molecube.turnclockdown();
+                            animation = "clockdown";
+                            animationtime = animationmaxtime;
+                        }
+                        if(selected == "k"){
+                            molecube = molecube.turnclockleft();
+                            animation = "clockleft";
+                            animationtime = animationmaxtime;
+                        }
+                        if(selected == "o"){
+                            molecube = molecube.turnclockright();
+                            animation = "clockright";
+                            animationtime = animationmaxtime;
+                        }
+                        if(selected == "n"){
+                            molecube = molecube.turnclockfront();
+                            animation = "clockfront";
+                            animationtime = animationmaxtime;
+                        }
+                        if(selected == "m"){
+                            molecube = molecube.turnclockback();
+                            animation = "clockback";
+                            animationtime = animationmaxtime;
+                        }
+                    }
+                    if(keys[68]==true){
+                        if(selected == "e"){
+                            molecube = molecube.turnunclockup();
+                            animation = "unclockup";
+                            animationtime = animationmaxtime;
+                        }
+                        if(selected == "u"){
+                            molecube = molecube.turnunclockdown();
+                            animation = "unclockdown";
+                            animationtime = animationmaxtime;
+                        }
+                        if(selected == "k"){
+                            molecube = molecube.turnunclockleft();
+                            animation = "unclockleft";
+                            animationtime = animationmaxtime;
+                        }
+                        if(selected == "o"){
+                            molecube = molecube.turnunclockright();
+                            animation = "unclockright";
+                            animationtime = animationmaxtime;
+                        }
+                        if(selected == "n"){
+                            molecube = molecube.turnunclockfront();
+                            animation = "unclockfront";
+                            animationtime = animationmaxtime;
+                        }
+                        if(selected == "m"){
+                            molecube = molecube.turnunclockback();
+                            animation = "unclockback";
+                            animationtime = animationmaxtime;
+                        }
+                    }
+                }
+
+                var finalTime = d.getTime();
+                var v = finalTime-initialtime;
+                var waittime = ticklength-v;
+                if(waittime<2){
+                    waittime = 2
+                    console.log("can't keep up, turning fps down");
+                    fps = fps--;
+                    ticklength = 1000/fps
+                }else{
+                    if(fps<topFPS) fps++
+                    ticklength = 1000/fps
+                }
+                if(timerrising == true){
+                    timer++
+                    if(timer>30) timerrising = false
+                }else {
+                    timer--
+                    if(timer<1) timerrising = true
+                }
+                animationtime = animationtime-ticklength;
+                
+                if(animationtime<0){
+                    animationtime = 0;
+                    animation = "free";
+
+                }
+                //console.log(timer)
+                //if(kk>60) {
+                //    console.log("hi")
+                //    kk = 0;
+                //    molecube = molecube.turnclockleft();
+                //}
+                setTimeout(() => {
+                    
+                    tick();
+                }, waittime);
+            }
+            function typeText(x,y,t){
+                ctx.fillStyle = rgb(0,0,0);
+                ctx.font = "30px Arial";
+                ctx.fillText(t, x, y);
+            }
+            function drawCircleXYR(x,y,r,ic,oc) {
+                ctx.lineWidth = 5;
+                if(ic) 
+                    ctx.fillStyle = ic; 
+                else 
+                    ctx.fillStyle = rgb(0,0,0);
+
+                if(oc) 
+                    ctx.strokeStyle = oc; 
+                else 
+                    ctx.strokeStyle = rgb(255,255,255);
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, 2 * Math.PI);
+                ctx.stroke();
+                ctx.fill();
+            }
+            function drawXYrect(x, y, grosor, color) {
+                if(color) 
+                  ctx.fillStyle = color; 
+                else 
+                  ctx.fillStyle = rgb(0,0,0);
+                ctx.fillRect(x, y, grosor, grosor);
+            }
+            function rgb(r,g,b) {
+                var r_ = check(decToHex(r));
+                var g_ = check(decToHex(g));
+                var b_ = check(decToHex(b));
+                return "#"+r_+g_+b_;
+            }
+            function decToHex(n) {
+                if(n<0){
+                    n = 0xFFFFFFFF + n + 1;
+                }
+                return Math.round(n).toString(16).toUpperCase();
+            }
+            function check(n){
+                //console.log(n)
+                if(n.length>2){
+                    return "FF";
+                }else if (n.length<2){
+                    return "0"+n;
+
+                }else return n
+            }
+            function swap (arr, a, b) {
+                var temp = arr[a];
+                arr[a] = arr[b];
+                arr[b] = temp;
+            };
+            function organize(arr,i){
+                if(i!=arr.length){
+                    if(i==0){
+                        organize(arr,i+1);
+                    }else{
+                        //console.log(i);
+                        if(arr[i][1][2] > arr[i-1][1][2]){
+                            swap(arr,i,i-1);
+                            organize(arr,i-1);
+                        }else{
+                            organize(arr,i+1);
+                        }
+                    }
+                }
+            }
+            function getcolor(str) {
+                if(str == "black") return rgb(0,0,0);
+                if(str == "red") return rgb(255,0,0);
+                if(str == "green") return rgb(0,255,0);
+                if(str == "white") return rgb(255,255,255);
+                if(str == "blue") return rgb(0,0,255);
+                if(str == "purple") return rgb(255,0,255);
+                if(str == "cyan") return rgb(0,255,255);
+                if(str == "orange") return rgb(255,255,0);
+                if(str == "yellow") return rgb(100,100,100);
+            }
+            function select() {
+                selected = ""
+                for (let i = 0; i < publicScreenPos.length; i++) {
+                    const element = publicScreenPos[i];
+                    const x = element[1][0]*500+canvas.width/2;
+                    const y = element[1][1]*500+canvas.height/2;
+                    const r = ballsize/element[1][2];
+                    if(distance2d(x,y,ratonx,ratony)<r&&(element[2]=="e"||element[2]=="u"||element[2]=="o"||element[2]=="n"||element[2]=="k"||element[2]=="m"||element[2]=="e")){
+                        selected = element[2];
+                    }
+                    
+                }
+            }
+            canvas.addEventListener('mousemove',function onMouseover(e){
+                ratonx = e.clientX;
+                ratony = e.clientY;
+            });
+            document.onmousedown = mouseDown; 
+            function mouseDown(e) {
+                if (e.which==1) {//righClick
+                    select();
+                }
+            }
+        </script>
+    </body>
+</html>
+
+
+
+
