@@ -38,9 +38,14 @@
             var selected = "";
             var timer = 0;
             var timerrising = true;
-            
+            var interfaceCooldown = 0;
+            var colorDisplayCoolDown = 0;
+            var goBackHomeStatus = false
+            var goBackHomeTime = 0
             //var kk = 0;
-            window.onkeyup = function(e) { keys[e.keyCode] = false;}
+            window.onkeyup = function(e) { 
+                //console.log(e.keyCode);
+                keys[e.keyCode] = false;}
             window.onkeydown = function(e) { keys[e.keyCode] = true;}
             // 
             //               a d g
@@ -55,31 +60,31 @@
             //              r u x 
             //             s v y  
             var molecube = {
-                a :"black",
-                b :"red",
-                c :"green",
-                d :"white",
-                f :"blue",
-                g :"purple",
-                h :"blue",
-                i :"cyan",
-                j :"cyan",
-                k :"black",
-                l :"yellow",
-                m :"orange",
-                n :"yellow",
-                ñ :"red",
-                o :"white",
-                p :"orange",
-                q :"yellow",
-                r :"blue",
-                s :"white",
-                t :"purple",
-                u :"cyan",
-                v :"red",
-                w :"green",
-                x :"black",
-                y :"orange",
+                a :"1",
+                b :"2",
+                c :"3",
+                d :"4",
+                f :"5",
+                g :"6",
+                h :"5",
+                i :"7",
+                j :"7",
+                k :"1",
+                l :"9",
+                m :"8",
+                n :"9",
+                ñ :"2",
+                o :"4",
+                p :"8",
+                q :"9",
+                r :"5",
+                s :"4",
+                t :"6",
+                u :"7",
+                v :"2",
+                w :"3",
+                x :"1",
+                y :"8",
                 topFace : function() {
                     return[
                         a,b,c,
@@ -497,7 +502,70 @@
                         }
                     }
                 }
+                if(interfaceCooldown<0 && !(selected=="e"||selected=="u"||selected=="o"||selected=="n"||selected=="k"||selected=="m"||selected=="e")){
+                    if(keys[68]==true){
+                        molecube[selected] = (parseInt(molecube[selected])+1)+""
+                        if(molecube[selected]==10) molecube[selected]="1"
+                        interfaceCooldown = 20;
+                        colorDisplayCoolDown = 300;
+                    }
+                    if(keys[65]==true){
+                        molecube[selected] = (parseInt(molecube[selected])-1)+""
+                        if(molecube[selected]==0) molecube[selected]="9"
+                        interfaceCooldown = 20;
+                        colorDisplayCoolDown = 300;
+                    }
+                }
+                if(!(keys[65]==true||keys[68]==true)){
+                    interfaceCooldown = 0;
+                }
+                if(colorDisplayCoolDown>0 && !(selected=="e"||selected=="u"||selected=="o"||selected=="n"||selected=="k"||selected=="m"||selected=="e"||selected == "")){
+                    var opacity = 100
+                    if(colorDisplayCoolDown<100){
+                        opacity = colorDisplayCoolDown
+                    }
+                    var negro = ((100-opacity)/100)*250
+                    for (let i = 9; i > 0; i--) {
+                        var x = canvas.width/2+((i+1)*-70)
+                        var y = canvas.height/6
+                        var n = (parseInt(molecube[selected])+i)+""
+                        var c = getcolor(n,opacity)
+                        if(n>0&&n<10) drawCircleXYR(x,y,50-i*4,c,rgb(negro,negro,negro));
+                        //typeText(x,y,n);
+                        
+                    }
+                    for (let i = 9; i > 0; i--) {
+                        var x = canvas.width/2-((i+1)*-70)
+                        var y = canvas.height/6
+                        var n = (parseInt(molecube[selected])-i)+""
+                        var c = getcolor(n,opacity)
+                        
+                        if(n>0&&n<10) drawCircleXYR(x,y,50-i*4,c,rgb(negro,negro,negro));
+                        //typeText(x,y,n);
+                    
+                    }
+                    drawCircleXYR(canvas.width/2,canvas.height/6,100,getcolor(molecube[selected],opacity),rgb(negro,negro,negro));
+                    //typeText(canvas.width/2,canvas.height/6,molecube[selected]);
 
+                }
+                if(goBackHomeStatus){
+                    goBackHomeTime--
+                    console.log(goBackHomeTime);
+                    if(goBackHomeTime==200){
+                        goBackHomeStatus = false
+                    }
+                    ntime = 300-goBackHomeTime;
+                    time = goBackHomeTime;
+                    camara=[camara[0]*time/300+ntime/300*10,camara[1]*time/300,camara[2]*time/300]
+                }else{
+                    if(keys[88]){
+                        goBackHomeStatus = true
+                        goBackHomeTime = 300
+                    }
+                }
+                
+                interfaceCooldown--
+                colorDisplayCoolDown--
                 var finalTime = d.getTime();
                 var v = finalTime-initialtime;
                 var waittime = ticklength-v;
@@ -605,24 +673,39 @@
                 }
             }
             function getcolor(str) {
-                if(str == "black") return rgb(0,0,0);
-                if(str == "red") return rgb(255,0,0);
-                if(str == "green") return rgb(0,255,0);
-                if(str == "white") return rgb(255,255,255);
-                if(str == "blue") return rgb(0,0,255);
-                if(str == "purple") return rgb(255,0,255);
-                if(str == "cyan") return rgb(0,255,255);
-                if(str == "orange") return rgb(255,255,0);
-                if(str == "yellow") return rgb(100,100,100);
+                if(str == "1") return rgb(0,0,0);//black
+                if(str == "2") return rgb(255,0,0);//red
+                if(str == "3") return rgb(0,255,0);//green
+                if(str == "4") return rgb(255,255,255);//white
+                if(str == "5") return rgb(0,0,255);//blue
+                if(str == "6") return rgb(255,0,255);//purple
+                if(str == "7") return rgb(0,255,255);//cyan
+                if(str == "8") return rgb(255,255,0);//orange
+                if(str == "9") return rgb(100,100,100);//yellow
+            }
+            function getcolor(str,op) {
+                if(!op) op = 100
+                nop = 100-op
+                if(str == "1") return rgb(0   *op/100+255*nop/100,    0   *op/100+255*nop/100,  0   *op/100+255*nop/100);//black
+                if(str == "2") return rgb(255 *op/100+255*nop/100,    0   *op/100+255*nop/100,  0   *op/100+255*nop/100);//red
+                if(str == "3") return rgb(0   *op/100+255*nop/100,    255 *op/100+255*nop/100,  0   *op/100+255*nop/100);//green
+                if(str == "4") return rgb(255 *op/100+255*nop/100,    255 *op/100+255*nop/100,  255 *op/100+255*nop/100);//white
+                if(str == "5") return rgb(0   *op/100+255*nop/100,    0   *op/100+255*nop/100,  255 *op/100+255*nop/100);//blue
+                if(str == "6") return rgb(255 *op/100+255*nop/100,    0   *op/100+255*nop/100,  255 *op/100+255*nop/100);//purple
+                if(str == "7") return rgb(0   *op/100+255*nop/100,    255 *op/100+255*nop/100,  255 *op/100+255*nop/100);//cyan
+                if(str == "8") return rgb(255 *op/100+255*nop/100,    255 *op/100+255*nop/100,  0   *op/100+255*nop/100);//orange
+                if(str == "9") return rgb(100 *op/100+255*nop/100,    100 *op/100+255*nop/100,  100 *op/100+255*nop/100);//yellow
             }
             function select() {
+                colorDisplayCoolDown = 0;
                 selected = ""
+                timer = 1;
                 for (let i = 0; i < publicScreenPos.length; i++) {
                     const element = publicScreenPos[i];
                     const x = element[1][0]*500+canvas.width/2;
                     const y = element[1][1]*500+canvas.height/2;
                     const r = ballsize/element[1][2];
-                    if(distance2d(x,y,ratonx,ratony)<r&&(element[2]=="e"||element[2]=="u"||element[2]=="o"||element[2]=="n"||element[2]=="k"||element[2]=="m"||element[2]=="e")){
+                    if(distance2d(x,y,ratonx,ratony)<r){
                         selected = element[2];
                     }
                     
@@ -645,3 +728,4 @@
 
 
 
+&&(element[2]=="e"||element[2]=="u"||element[2]=="o"||element[2]=="n"||element[2]=="k"||element[2]=="m"||element[2]=="e")
