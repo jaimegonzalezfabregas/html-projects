@@ -66,7 +66,7 @@
                     if(checkItAll(database)){
                         
                         resolving = true;
-                    }else console.log("meec")
+                    }else alert("Miralo bien, hijo mio")
                 }
                 if(e.keyCode == 32){
                     console.log(posibilidadesDe(hoverX,hoverY,database));
@@ -159,7 +159,7 @@
                     if(buffer.toString() == database.toString()){
                         resolving = false
                     }else{
-                        console.log(buffer,database)
+                        //console.log(buffer,database)
                         buffer = database.copy();
                     }
                     if(filled(database)){
@@ -208,7 +208,7 @@
                             //console.log("2",test.toString())    
                             if(posibilidades.length==1){
                                 test[x][y] = posibilidades[0];  
-                                console.log("holllllaaa");
+                                //console.log("holllllaaa");
                                 return test;
                             }
                         }
@@ -226,7 +226,7 @@
                     for (let cccnfc = 1; cccnfc < cccnf.length; cccnfc++) {
                         const element = cccnf[cccnfc];
                         if(element.length==1){
-                            console.log(cccnfc,element);
+                            //console.log(cccnfc,element);
                             ret[element[0][0]][element[0][1]] = cccnfc;
                             return ret; 
                         }
@@ -385,10 +385,10 @@
                 for (let i = 0; i < arr.length; i++) {
                     const cords = arr[i];
                     let posibilidades = posibilidadesDe(cords[0],cords[1],data);
-                    console.log(posibilidades,cords[0],cords[1]);
+                    //console.log(posibilidades,cords[0],cords[1]);
                     for (let n = 0; n < posibilidades.length; n++) {
                         const s = posibilidades[n];
-                        console.log(s+"hola",cords[0],cords[1]);
+                        //console.log(s+"hola",cords[0],cords[1]);
                         ret[s].push(cords.slice());
                         
                     }
