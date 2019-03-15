@@ -1,0 +1,458 @@
+<html>
+    <head>
+        <style>
+            canvas {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            body{
+                width: 100%;
+                height: 100%;
+                margin: 0px;
+                padding: 0px;
+            }
+        </style>
+    </head>
+    <body>  
+        <canvas id="canvas" width="1920" height="1080"></canvas>
+        <script>
+	    let canvas = document.getElementById("canvas");
+            let ctx = canvas.getContext("2d");
+            let root = 3
+            let database = []
+            let databaseEditable = [];
+            let resolving = false
+            let bordeCelda = 2;
+            let bordeinSudoku = 10;
+            let bordeoutSudoku = 10;
+            let hoverX;
+            let hoverY;
+            let ratonx;
+            let ratony;
+            let inputCoolDown = 0;
+            let presed = false
+            let keys = [];
+            let buffer = [];
+            window.onkeyup = function(e) { 
+                //console.log(e.keyCode);
+                keys[e.keyCode] = false;
+
+                
+                
+            }
+            window.onkeydown = function(e) { keys[e.keyCode] = true;
+            
+                if(e.keyCode == 87){
+                    if(databaseEditable[hoverX][hoverY]){
+
+                        database[hoverX][hoverY]++
+                        if(database[hoverX][hoverY]>root*root){
+                            database[hoverX][hoverY]=0
+                        }
+                    }
+                }    
+                if(e.keyCode == 83){
+                    if(databaseEditable[hoverX][hoverY]){
+                        database[hoverX][hoverY]--
+                        if(database[hoverX][hoverY]<0){
+                            database[hoverX][hoverY]=root*root
+                        }
+                    }
+                }  
+                if(e.keyCode == 81){
+                    //database = step(database);
+                    if(checkItAll(database)){
+                        
+                        resolving = true;
+                    }else console.log("meec")
+                }
+                if(e.keyCode == 32){
+                    console.log(posibilidadesDe(hoverX,hoverY,database));
+                    console.log(hoverX,hoverY)
+                    
+                }
+                if (e.keyCode>=48&&e.keyCode<=57) {
+                    if(databaseEditable[hoverX][hoverY]) database[hoverX][hoverY] = e.keyCode-48
+                }
+            
+            }
+            initialize();
+            tick();
+            function initialize() {
+                for (let x = 0; x < root*root; x++) {
+                    let wip = [];
+                    let wipeditable = [];
+                    for (let y = 0; y < root*root; y++) {
+                        wip.push(0);
+                        wipeditable.push(true);
+                    }
+                    database.push(wip);
+                    databaseEditable.push(wipeditable);
+                }
+            }
+            function tick() {
+                ctx.fillRect(0, 0, canvas.height, canvas.width);
+                canvas.height = canvas.clientHeight;
+                canvas.width = canvas.clientWidth;
+                
+                //draw the sudoku
+                let ladoDeTablero;
+                if(canvas.height<canvas.width){
+                    ladoDeTablero = canvas.height-bordeinSudoku-bordeoutSudoku;
+                }else{
+                    ladoDeTablero = canvas.width-bordeinSudoku-bordeoutSudoku;
+                }
+                drawXYrect(canvas.width/2-ladoDeTablero/2,canvas.height/2-ladoDeTablero/2,ladoDeTablero,rgb(0,0,0));
+                for (let x = 0; x < database.length; x++) {
+                    const row = database[x];
+                    for (let y = 0; y < row.length; y++) {
+                        anchoDeCelda = ladoDeTablero/(root*root)
+                        //console.log(x/root)
+                        let anchoDeCeldam = anchoDeCelda-bordeCelda/root
+                        let extrax = Math.floor(x/root)*bordeCelda;
+                        let extray = Math.floor(y/root)*bordeCelda;
+
+                        px = canvas.width/2-ladoDeTablero/2+bordeCelda/2 + x*anchoDeCeldam + extrax
+                        py = canvas.height/2-ladoDeTablero/2+bordeCelda/2 + y*anchoDeCeldam + extray
+                        const content = row[y];
+                        
+                        let c = rgb(255,255,255);
+                        
+                        //checkIfSelected
+                        if(ratonx>px&&ratonx<px+anchoDeCeldam-bordeCelda){
+                            if(ratony>py&&ratony<py+anchoDeCeldam-bordeCelda){
+                                hoverX = x;
+                                hoverY = y;
+                                c = rgb(170,170,170);
+                            }
+                        }
+
+                        if(!checkItAll(database)){
+                            databaseEditable[x][y]=false
+                            c = rgb(50,50,50);
+
+                            //console.log(database)
+                            datacopy = database.copy();
+                            datacopy[x][y] = 0
+                            if(checkItAll(datacopy)){
+                                databaseEditable[x][y]=true
+
+                                c = rgb(255,0,0);
+                            }
+                        }else{
+                            databaseEditable[x][y]=true
+                        }
+                        
+                        drawXYrect(px+bordeCelda/2,py+bordeCelda/2,anchoDeCeldam-bordeCelda,c)
+                        if(!content==0){
+                            typeText(px+anchoDeCeldam/2,py+anchoDeCeldam/2,content,anchoDeCeldam/2);
+                        }
+                    }
+                }
+
+
+                if(resolving){
+                    database = step(database);
+                    //console.log(database);
+                    if(buffer.toString() == database.toString()){
+                        resolving = false
+                    }else{
+                        console.log(buffer,database)
+                        buffer = database.copy();
+                    }
+                    if(filled(database)){
+                        resolving = false
+                    }
+                
+                }
+                //console.log(resolving);
+                
+                //console.log(checkItAll(database));
+
+                setTimeout(() => {
+                    tick()
+                }, 10);
+            }
+            function resolve(data) {
+                rep = true
+                let buffer = data.copy();
+                while (rep) {
+
+                    data = step(data);
+
+
+
+                    if(buffer == data){
+                        rep = false
+                    }else{
+                        buffer = data.copy();
+                    }
+                    if(filled(data)){
+                        rep = false
+                    }
+                }
+                
+            }
+            function step(data) {
+                let ret = data.copy();
+
+                let test = data.copy()
+                for (let x = 0; x < test.length; x++) {
+                    let row = test[x];
+                    for (let y = 0; y < row.length; y++) {
+                        if (row[y]==0){
+                            //console.log("1",test.toString())
+                            let posibilidades = posibilidadesDe(x,y,test.copy());
+                            //console.log("2",test.toString())    
+                            if(posibilidades.length==1){
+                                test[x][y] = posibilidades[0];  
+                                console.log("holllllaaa");
+                                return test;
+                            }
+                        }
+                    }
+                    
+                }
+                //console.log("NoStep",data)
+
+                //filas y columnas
+
+
+                for (let n = 0; n < root*root; n++) {
+                    let cccnf = cuantasCasillasDeCadaNúmeroEnFila(ret,n)
+                    let cccnc = cuantasCasillasDeCadaNúmeroEnColumna(ret,n)
+                    for (let cccnfc = 1; cccnfc < cccnf.length; cccnfc++) {
+                        const element = cccnf[cccnfc];
+                        if(element.length==1){
+                            console.log(cccnfc,element);
+                            ret[element[0][0]][element[0][1]] = cccnfc;
+                            return ret; 
+                        }
+                        
+                    }
+                    for (let cccncc = 1; cccncc < cccnc.length; cccncc++) {
+                        const element = cccnc[cccncc];
+                        if(element.length==1){
+                            ret[element[0][0]][element[0][1]] = cccncc;
+                            return ret;
+                        }
+                        
+                    }
+                }
+
+                // cuadrantes
+
+                for (let x = 0; x < root; x++) {
+                    for (let y = 0; y < root; y++) {
+                        let cccnc = cuantasCasillasDeCadaNúmeroEnCuadrante(ret,x,y)
+                        for (let cccncc = 1; cccncc < cccnc.length; cccncc++) {
+                            const element = cccnc[cccncc];
+                            if(element.length==1){
+                                ret[element[0][0]][element[0][1]] = cccncc;4
+                                return ret;
+                            }
+                            
+                        }
+                        
+                    }
+                }
+                return ret;
+
+            }
+            function filled(data) {
+                for (let x = 0; x < data.length; x++) {
+                    const row = data[x];
+                    for (let y = 0; y < row.length; y++) {
+                        const element = row[y];
+                        if(element==0){
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+            
+            function posibilidadesDe(x,y,data) {
+                //console.log("3",data.toString())
+                if(data[x][y]!=0){
+                    return [];
+                }
+                let ret = [];
+                for (let i = 1; i < root*root+1; i++) {
+                    let test = data.copy()
+                    test[x][y] = i;
+                    if(checkItAll(test)){
+                        ret.push(i);
+                    }
+                }
+                //console.log("4",data.toString())
+                return ret;
+            }
+
+            function typeText(x,y,t,s){
+                ctx.fillStyle = rgb(0,0,0);
+                ctx.font = Math.floor(s)+"px Arial";
+                //ctx.font = "30px Arial";
+                //console.log(ctx.font,t+"",x,y)
+                ctx.fillText(t, x-s/4, y+s/4);
+            }
+            function checkItAll(data) {
+                let ret = false;
+                //filas
+                for (let i = 0; i < root*root; i++) {
+                    ret = ret||repetidosEnFila(data,i);
+                }
+                //columnas
+                for (let i = 0; i < root*root; i++) {
+                    ret = ret||repetidosEnColumna(data,i);
+                }
+                //cuadrantes
+                for (let i = 0; i < root; i++) {
+                    for (let j = 0; j < root; j++) {
+                        ret = ret||repetidosEnCuadrante(data,i,j);
+                    }
+                }
+                return !ret;
+            }
+            function repetidosEnFila(data,f) {
+                let ret = [];
+                for (let i = 0; i < root*root; i++) {
+                    ret.push(data[i][f]);
+                }
+                return repetidos(ret);
+            }
+            function repetidosEnColumna(data,c) {
+                let ret = [];
+                for (let i = 0; i < root*root; i++) {
+                    ret.push(data[c][i]);
+                }
+                return repetidos(ret);
+            }
+            function repetidosEnCuadrante(data,cx,cy){
+                if(cx>root-1||cy>root-1||cx<0||cy<0){
+                    return null
+                }else{
+                    let wip = [];
+                    //console.log(cx,cy,"----");
+
+                    for (let x = 0; x < root; x++) {
+                        for (let y = 0; y < root; y++) {
+                            const element = data[x+cx*root][y+cy*root];
+                            wip.push(element);
+                            //console.log(x+cx*root,y+cx*root);
+                        }
+                    }
+                    return repetidos(wip);
+                }
+            }
+            function cuantasCasillasDeCadaNúmeroEnFila(data,f) {
+                let cords = [];
+                for (let i = 0; i < root*root; i++) {
+                    cords.push([i,f])
+                }
+                return cuantasCasillasDeCadaNúmero(data,cords)
+            }
+            function cuantasCasillasDeCadaNúmeroEnColumna(data,c) {
+                let cords = [];
+                for (let i = 0; i < root*root; i++) {
+                    cords.push([c,i])
+                }
+                return cuantasCasillasDeCadaNúmero(data,cords)
+            }
+            function cuantasCasillasDeCadaNúmeroEnCuadrante(data,cx,cy) {
+                if(cx>root-1||cy>root-1||cx<0||cy<0){
+                    return null
+                }else{
+                    let wip = [];
+                    //console.log(cx,cy,"----");
+
+                    for (let x = 0; x < root; x++) {
+                        for (let y = 0; y < root; y++) {
+                            wip.push([x+cx*root,y+cy*root]);
+                        }
+                    }
+                    //console.log(wip)
+                    return cuantasCasillasDeCadaNúmero(data,wip);
+                }
+            }
+            function cuantasCasillasDeCadaNúmero(data,arr) {
+                let ret = [];
+                for (let c = 0; c < root*root+1; c++) {
+                    ret.push([]);
+                }
+                for (let i = 0; i < arr.length; i++) {
+                    const cords = arr[i];
+                    let posibilidades = posibilidadesDe(cords[0],cords[1],data);
+                    console.log(posibilidades,cords[0],cords[1]);
+                    for (let n = 0; n < posibilidades.length; n++) {
+                        const s = posibilidades[n];
+                        console.log(s+"hola",cords[0],cords[1]);
+                        ret[s].push(cords.slice());
+                        
+                    }
+                }
+                return ret;
+            }
+            function repetidos(arr){
+                for (let i = 0; i < arr.length-1; i++) {
+                    const elementi = arr[i];
+                    for (let j = i+1; j < arr.length; j++) {
+                        const elementj = arr[j];
+                        if(elementi == elementj && elementj != 0) return true;
+                    }
+                }
+                return false;
+            }
+            function drawXYrect(x, y, grosor, color) {
+                //console.log("fufo?")
+                if(color) 
+                  ctx.fillStyle = color; 
+                else 
+                  ctx.fillStyle = "#555555";
+                ctx.fillRect(x, y, grosor, grosor);
+            }
+            function rgb(r,g,b) {
+                let r_ = check(decToHex(r));
+                let g_ = check(decToHex(g));
+                let b_ = check(decToHex(b));
+                return "#"+r_+g_+b_;
+            }
+
+            function decToHex(n) {
+                if(n<0){
+                    n = 0xFFFFFFFF + n + 1;
+                }
+                return Math.round(n).toString(16).toUpperCase();
+            }
+
+            function check(n){
+                //console.log(n)
+                if(n.length>2){
+                    return "FF";
+                }else if (n.length<2){
+                    return "0"+n;
+
+                }else return n
+            }
+
+            canvas.addEventListener('mousemove',function onMouseover(e){
+                ratonx = e.clientX;
+                ratony = e.clientY;
+            });
+
+
+            Array.prototype.copy = function(){
+                let ret = [];
+                for (let i = 0; i < this.length; i++) {
+                    const element = this[i];
+                    ret.push(element.slice(0));
+                }
+                
+                
+                return ret
+            }
+        </script>
+    </body>
+</html>
