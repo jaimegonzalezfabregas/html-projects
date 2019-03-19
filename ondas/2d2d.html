@@ -1,0 +1,205 @@
+<html>
+    <head>
+        <style>
+            canvas {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            body{
+                width: 100%;
+                height: 100%;
+                margin: 0px;
+                padding: 0px;
+            }
+        </style>
+    </head>
+    <body>  
+        <canvas id="canvas" width="1920" height="1080"></canvas>
+        <script>
+	    let canvas = document.getElementById("canvas");
+            let ctx = canvas.getContext("2d");
+            let parseo = 100;
+            let pixelSize = 10  ;
+            let d = new Date();
+            let fps = 30;
+            let values = [];
+            let buffer = []
+            let ratonx = 0;
+            let ratony = 0;
+            let click = false
+            let Shader = 1
+            let nShader = 1
+
+
+            initialice();
+            tick();
+
+            canvas.onmousedown = function() {
+                click = true
+            }
+            canvas.onmouseup = function() {
+                click = false
+            }
+            function initialice() {
+                values = [];
+                buffer = [];
+                for (let i = 0; i < parseo; i++) {
+                    let wip = [];
+                    let wip1 = [];
+                    for (let i = 0; i < parseo; i++) {
+                        wip.push([0,0]);
+                        wip1.push(0);
+                    }
+                    values.push(wip);
+                    buffer.push(wip1);
+                }
+                //console.log(values)
+            }
+            function tick() {
+                ctx.fillRect(0, 0, canvas.height, canvas.width);
+                canvas.height = canvas.clientHeight;
+                canvas.width = canvas.clientWidth;
+
+                let s = d.getTime();
+                
+                // fisics
+                for (let x = 0; x < values.length; x++) {
+                    for (let y = 0; y < values[x].length; y++) {
+                        const unit = values[x][y];
+
+                        let cruz = (lim(x,y,0,1)+lim(x,y,0,-1)+lim(x,y,1,0)+lim(x,y,-1,0))/4
+                        let equis = (lim(x,y,1,1)+lim(x,y,-1,-1)+lim(x,y,1,-1)+lim(x,y,-1,1))/4*Math.sqrt(2)
+                        let a = (unit[0]*0.005 +unit[0]-cruz*0.5 +unit[0]-equis*0.5);
+
+                        unit[1] = (unit[1] * 0.99 ) - a;
+                        buffer[x][y] = unit[0] + unit[1];
+                        //console.log(a,unit[1],buffer[x][y])
+
+                        
+                    }
+
+                }
+
+                
+
+
+                for (let x = 0; x < buffer.length; x++) {
+                    for (let y = 0; y < buffer[x].length; y++) {
+                        const unit = buffer[x][y];
+                        values[x][y][0] = unit
+                        
+                        
+                    }
+
+                }
+
+
+                //interfaceIn
+                let ix = Math.floor((ratonx-canvas.width/2+((pixelSize*parseo)/2))/pixelSize)
+                let iy = Math.floor((ratony-canvas.height/2+((pixelSize*parseo)/2))/pixelSize)
+
+                if(click&&(ix>=0&&ix<=parseo-1)&&(iy>=0&&iy<=parseo-1)){
+                    values[ix][iy][1]=values[ix][iy][1]+100
+                    console.log(values[ix][iy][1]);
+                }
+
+                //draw
+                for (let x = 0; x < values.length; x++) {
+                    const row = values[x];
+                    for (let y = 0; y < row.length; y++) {
+                        const unit = row[y];
+                        let cruz = (lim(x,y,0,1)+lim(x,y,0,-1)+lim(x,y,1,0)+lim(x,y,-1,0))/4
+                        let equis = (lim(x,y,1,1)+lim(x,y,-1,-1)+lim(x,y,1,-1)+lim(x,y,-1,1))/4*Math.sqrt(2)
+                        let media = (cruz+equis+unit[0])/3
+                        if(Shader == 0){
+                            if(media>=0) drawXYrect(canvas.width/2-(parseo*pixelSize)/2+(x*pixelSize),canvas.height/2-(parseo*pixelSize)/2+y*pixelSize,pixelSize,pixelSize,rgb(media*10,0,0))
+                            else drawXYrect(canvas.width/2-(parseo*pixelSize)/2+(x*pixelSize),canvas.height/2-(parseo*pixelSize)/2+y*pixelSize,pixelSize,pixelSize,rgb(0,-media*10,0))
+                    
+                        }else if(Shader == 1){
+                            let cruzb = (lim(x+1,y+1,0,1)+lim(x+1,y+1,0,-1)+lim(x+1,y+1,1,0)+lim(x+1,y+1,-1,0))/4
+                            let equisb = (lim(x+1,y+1,1,1)+lim(x+1,y+1,-1,-1)+lim(x+1,y+1,1,-1)+lim(x+1,y+1,-1,1))/4*Math.sqrt(2)
+                            let mediab = (cruzb+equisb+lim(x+1,y+1,0,0))/3
+
+                            let intensity = -((media-mediab)*30)+255
+                            if(intensity>=0) drawXYrect(canvas.width/2-(parseo*pixelSize)/2+(x*pixelSize),canvas.height/2-(parseo*pixelSize)/2+y*pixelSize,pixelSize,pixelSize,rgb(intensity,intensity,intensity))
+                            else drawXYrect(canvas.width/2-(parseo*pixelSize)/2+(x*pixelSize),canvas.height/2-(parseo*pixelSize)/2+y*pixelSize,pixelSize,pixelSize,rgb(0,0,0))
+                        }
+                       }
+                    
+                
+                }
+                //console.log(values,buffer);
+                //console.log(values);
+
+
+                let t = d.getTime();
+                setTimeout(() => {
+                    tick();
+                    
+                }, 1000/fps-(t-s));
+            }
+
+
+            function lim(xa,ya,xr,yr){
+                x = xa+xr;
+                y = ya+yr;
+                if(x>=0&&x<=parseo-1&&y>=0&&y<=parseo-1){
+                    //console.log(x,y)
+                    return values[x][y][0]
+                }else{
+                    return 0
+                }
+            }
+
+            function drawXYrect(x, y, width, height, color) {
+                //console.log("fufo?")
+                if(color) 
+                  ctx.fillStyle = color; 
+                else 
+                  ctx.fillStyle = "#555555";
+                ctx.fillRect(x, y, width, height);
+            }
+            function rgb(r,g,b) {
+                let r_ = check(decToHex(r));
+                let g_ = check(decToHex(g));
+                let b_ = check(decToHex(b));
+                return "#"+r_+g_+b_;
+            }
+
+            function decToHex(n) {
+                if(n<0){
+                    n = 0xFFFFFFFF + n + 1;
+                }
+                return Math.round(n).toString(16).toUpperCase();
+            }
+
+            function check(n){
+                //console.log(n)
+                if(n.length>2){
+                    return "FF";
+                }else if (n.length<2){
+                    return "0"+n;
+
+                }else return n
+            }
+
+            canvas.addEventListener('mousemove',function onMouseover(e){
+                ratonx = e.clientX;
+                ratony = e.clientY;
+            });
+            document.oncontextmenu=RightMouseDown;
+
+            function RightMouseDown() { 
+                Shader++;
+                if(Shader>nShader){
+                    Shader = 0;
+                }
+                return false;
+            }
+
+
+        </script>
+    </body>
+</html>

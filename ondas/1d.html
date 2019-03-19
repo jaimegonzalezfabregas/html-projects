@@ -1,0 +1,185 @@
+<html>
+    <head>
+        <style>
+            canvas {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            body{
+                width: 100%;
+                height: 100%;
+                margin: 0px;
+                padding: 0px;
+            }
+        </style>
+    </head>
+    <body>  
+        <canvas id="canvas" width="1920" height="1080"></canvas>
+        <script>
+	    let canvas = document.getElementById("canvas");
+            let ctx = canvas.getContext("2d");
+            let parseo = 200;
+            let ValueRange = 10;
+            let d = new Date();
+            let fps = 30;
+            let values = [];
+            let buffer = []
+            let ratonx = 0;
+            let ratony = 0;
+            let click = false
+
+
+            initialice();
+            tick();
+
+            canvas.onmousedown = function() {
+                click = true
+            }
+            canvas.onmouseup = function() {
+                click = false
+            }
+            function initialice() {
+                for (let i = 0; i < parseo; i++) {
+                    values.push([0,0]);
+                    buffer.push(0);
+                }
+            }
+            function tick() {
+                ctx.fillRect(0, 0, canvas.height, canvas.width);
+                canvas.height = canvas.clientHeight;
+                canvas.width = canvas.clientWidth;
+
+                let s = d.getTime();
+                
+                // fisics
+                for (let x = 0; x < values.length; x++) {
+                    let y = values[x][0];
+                    let antes;
+                    let despues;
+                    var k = 0.5
+                    var k2 = 0.05  
+                    let a;
+
+                    if(x-1<0){
+                        despues = values[x+1][0]
+                        a = (y*k2 + 2*(y-despues)*k)
+                        console.log(a)
+                    }else{
+                        antes = values[x-1][0]
+                        if(x+1>values.length-1){
+                            a = (y*k2 + 2*(y-antes)*k)
+                        }else{
+                            despues = values[x+1][0]
+                            a = (y*k2 + (y-antes)*k + (y-despues)*k)
+                        }
+                    }
+
+                    
+
+                    //speed
+
+                    values[x][1] = ((values[x][1]*0.99)-a)
+
+                    //pos
+
+                    buffer[x] = values[x][0]+values[x][1]
+
+                }
+
+                let i = Math.floor((ratonx/canvas.width*parseo))
+                if(click){
+                    values[i][1]=values[i][1]-(ratony-canvas.height/2)/(ValueRange*20)
+                }
+
+
+                for (let i = 0; i < buffer.length; i++) {
+                    const elmnt = buffer[i];
+                    values[i][0] = elmnt
+                }
+
+
+                //draw
+                for (let x = 0; x < values.length; x++) {
+                    const y = values[x][0];
+                    
+                    let antes;
+                    let despues;
+
+                    if(x-1>0){
+                        despues = values[x-1][0]
+                    }
+                    if(x+1<values.length-1){
+                        antes = values[x+1][0]
+                    }
+
+
+
+
+
+
+
+                    let ho = -(y/ValueRange)*(canvas.height/2)
+                    let ha = -(antes/ValueRange)*(canvas.height/2)
+                    let hd = -(despues/ValueRange)*(canvas.height/2)
+                    let h = (ho*2+ha+hd)/4
+                    let g = 30 // ((y+ValueRange)/(ValueRange*2))*255
+                    drawXYrect(x*(canvas.width/parseo),canvas.height/2,canvas.width/parseo,h,rgb((1-(x/values.length))*255,g,(x/values.length)*255));
+                }
+                //console.log(values);
+
+
+                let t = d.getTime();
+                setTimeout(() => {
+                    tick();
+                    
+                }, 1000/fps-(t-s));
+            }
+
+
+
+
+            function drawXYrect(x, y, width, height, color) {
+                //console.log("fufo?")
+                if(color) 
+                  ctx.fillStyle = color; 
+                else 
+                  ctx.fillStyle = "#555555";
+                ctx.fillRect(x, y, width, height);
+            }
+            function rgb(r,g,b) {
+                let r_ = check(decToHex(r));
+                let g_ = check(decToHex(g));
+                let b_ = check(decToHex(b));
+                return "#"+r_+g_+b_;
+            }
+
+            function decToHex(n) {
+                if(n<0){
+                    n = 0xFFFFFFFF + n + 1;
+                }
+                return Math.round(n).toString(16).toUpperCase();
+            }
+
+            function check(n){
+                //console.log(n)
+                if(n.length>2){
+                    return "FF";
+                }else if (n.length<2){
+                    return "0"+n;
+
+                }else return n
+            }
+
+            canvas.addEventListener('mousemove',function onMouseover(e){
+                ratonx = e.clientX;
+                ratony = e.clientY;
+            });
+        </script>
+    </body>
+</html>
+
+
+
+
