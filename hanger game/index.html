@@ -103,7 +103,7 @@
                         let oldAngle = Math.atan2(vy,vx);
                         let newAngle = Math.atan2((y-hangs[hangURHanging][1]),(x-hangs[hangURHanging][0]))+Math.PI/2
                         let newSpeed = Math.cos(newAngle-oldAngle)*oldspeed
-                        if(keys[83]&&Math.abs(newSpeed)<x){
+                        if(Math.abs(newSpeed)<x){
                             newSpeed=newSpeed*1.01
                             console.log(newSpeed)
                         }
