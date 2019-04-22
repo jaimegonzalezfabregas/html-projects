@@ -1,0 +1,182 @@
+<html>
+    <head>
+        <style>
+        </style>
+    </head>
+    <body> 
+        input: <input id="in" type="text"></input>
+        <button onclick="functionOfDoom()"> DOOM!(once) </button><button onclick="Reenter()"> Reinput </button>
+        <br>
+        n:<input id="n" type="text"></input>
+        <button onclick="functionOfDoomN()"> DOOM!(n-times) </button>
+        <p id="out"></p>
+        </br></br></br>
+        Usage:</br>
+        p O q -> OR</br>
+        p Y q -> AND</br>
+        !p -> NOT</br>
+        p OX q -> XOR</br>
+        p --> q -> Implication</br>
+        p <-> q Coimplication</br>
+
+
+        <script>
+            var in_ = document.getElementById("in");
+            var out = document.getElementById("out");
+            var n = document.getElementById("n");
+
+            var map = [
+                ["aOXb","((aOb)Y!(aYb))"],
+                ["a<->b","((a-->b)Y(b-->a))"],
+                ["!(aYb)","(!aO!b)"],
+                ["aYb","(!(!aO!b))"],
+                ["a-->b","!aYb"]
+
+
+            ]
+
+            function functionOfDoom(){
+                map = shufle(map);
+                let product = in_.value;
+                var done = false
+                for (let i = 0; i < product.length; i++) {//cada letra del producto
+                    //console.log(i,product);
+                    if(!done){
+                        for (let p = 0; p < map.length; p++) {//cada plantilla
+                            if(!done){
+                                const plantilla = map[p][0];
+                                const replacement = map[p][1]
+                                //check every a is the same leter and get its name and pos
+                                let aindex = AtChar(plantilla,'a')
+                                let a = getUnit(product,i+aindex[0]);//product.charAt(i+aindex[0]);
+                                for (let j = 1; j < aindex.length; j++) {
+                                    const index = aindex[j];
+                                    if(!(a == getUnit(product,i+aindex[j]))){
+                                        continue;
+                                    }
+                                }
+                                //check every b is the same leter and get its name and pos
+                                let bindex = AtChar(plantilla,'b')
+                                let b = getUnit(product,i+bindex[0]);//product.charAt(i+bindex[0]);
+                                for (let j = 1; j < bindex.length; j++) {
+                                    const index = bindex[j];
+                                    if(!(b == getUnit(product,i+bindex[j]))){
+                                        continue;
+                                    }
+                                }
+                                if(a=="--ThatIsNotPosible--"||b=="--ThatIsNotPosible--"){
+                                    continue;
+                                }
+                                //check if it fits
+                                let muestra = product.substring(i,i+plantilla.length);
+                                for (let j = 0; j < aindex.length; j++) {
+                                    muestra = replace(muestra,aindex[j],1,"a");                            
+                                }
+                                for (let j = 0; j < bindex.length; j++) {
+                                    muestra = replace(muestra,bindex[j],1,"b");                            
+                                }
+                                //console.log(muestra,plantilla);
+                                if(muestra==plantilla){
+                                    //put the new thing inside
+                                    let newChunk = replacement;
+                                    let aindex = AtChar(newChunk,'a');
+                                    let bindex = AtChar(newChunk,'b');
+                                    for (let j = 0; j < aindex.length; j++) {
+                                        newChunk = replace(newChunk,aindex[j],1,a);                            
+                                    }
+                                    for (let j = 0; j < bindex.length; j++) {
+                                        newChunk = replace(newChunk,bindex[j],1,b);                            
+                                    }
+                                    product = replace(product,i,muestra.length,newChunk);
+                                    done = true;
+                                    console.log(product);
+                                    //i = i+muestra.length-1
+                                    //p = map.length;
+                                }  
+                            }
+                        }  
+                    }                
+                }
+
+                out.innerHTML = product
+            }
+            //console.log(replace("0123456789",5,2,"Hola"))
+            console.log(getUnit("0123456789",3))
+            function getUnit(str,i) {
+                //return str.charAt(i);
+                let principio=i;
+                let final=i+1;
+                fullness = false
+                while (!fullness) {
+                    var ret = str.substring(principio,final);
+                    if(CharNum(ret,")")-CharNum(ret,"(")==0){
+                        if(str.charAt(principio-1)=="!"){
+                            principio--
+                            continue;
+                        }else{
+                            fullness = true;
+                        }
+                    }else{
+                        if(CharNum(ret,")")>CharNum(ret,"(")){
+                            principio--;
+                        }else{
+                            final++;
+                        }
+                    }
+                }
+                var ret = str.substring(principio,final);
+                if(ret=="!"||ret=="Y"||ret=="="||ret=="X"||ret=="-"||ret=="<"||ret==">"){return "--ThatIsNotPosible--"}
+                console.log(str.substring(principio,final));
+                return str.substring(principio,final);
+            }
+            function CharNum(str,char){
+                let cuenta = 0;
+                let posicion = str.indexOf(char);
+                while ( posicion != -1 ) {
+                    cuenta++;
+                    posicion = str.indexOf(char,posicion+1);
+                }
+                return cuenta;
+            }
+            function replace(str,i,l,char) {
+                return str.substring(0,i)+char+str.substring(i+l,str.length);
+            }
+            function functionOfDoomN(){
+                var m = parseInt(n.value);
+                for (let i = 0; i < m; i++) {
+                    functionOfDoom();
+                    Reenter();
+                }
+            }
+            function Reenter(){
+                in_.value = out.innerHTML;
+            }
+            function AtChar(str,char){
+                let ret = [];
+                for (let i = 0; i < str.length; i++) {
+                    if (str.charAt(i)==char) {
+                        ret.push(i);
+                    }
+                }
+                return ret;
+            }
+            function shufle(array){
+                var currentIndex = array.length, temporaryValue, randomIndex;
+
+                while (0 !== currentIndex) {
+                    randomIndex = Math.floor(Math.random() * currentIndex);
+                    currentIndex -= 1;
+                    temporaryValue = array[currentIndex];
+                    array[currentIndex] = array[randomIndex];
+                    array[randomIndex] = temporaryValue;
+                }
+
+                return array;
+            }
+        </script>
+    </body>
+</html>
+
+
+
+

@@ -1,0 +1,151 @@
+<html>
+    <head>
+    </head>
+    <body>  
+        <script>
+            var found = false;
+            inicialState=[
+                ["col","oveja","lobo"],
+                [1,2,3],
+                [],
+                [],
+                true
+            ];
+            function step(State,StateHistorial,Humanizidificado){
+                //console.log(StateHistorial,Humanizidificado);
+                if(!found && StateHistorial.length<10){
+                    WTD = WhatToDo(State,StateHistorial);
+                    if(WTD=="Step"){
+                        var NewStateHistorial = StateHistorial.copy()
+                        NewStateHistorial.push(State);
+                        if(State[4]){
+                            for (let i = 0; i < State[1].length; i++) {
+                                var NewState = viaje("llevar",i,State)   
+                                var newHumanizidificado = Humanizidificado + "|Llevar a "+State[0][i]
+                                step(NewState,NewStateHistorial,newHumanizidificado);
+                            }
+                        }else{
+                            for (let i = 0; i < State[3].length; i++) {
+                                var NewState = viaje("traer",i,State)   
+                                var newHumanizidificado = Humanizidificado + "|Traer a "+State[2][i]
+                                step(NewState,NewStateHistorial,newHumanizidificado);
+                            }
+                        }
+                        var NewState = viaje("none",0,State)
+                        var newHumanizidificado = Humanizidificado + " -|- Cruzar solo "
+                        step(NewState,NewStateHistorial,newHumanizidificado);
+
+                    }else if(WTD=="Done"){
+                        found = true;
+                        console.log(Humanizidificado);
+                        //console.log(State);
+                    }
+                }
+            }
+            function WhatToDo(State,StateHistorial) {
+                //console.log("---AAA---"+State[0].toString());
+                if(State[0].length == 0){
+                    //console.log("Done1",State.copy());
+                    return "Done"
+                }
+                for (let i = 0; i < StateHistorial.length; i++) {
+                    const S = StateHistorial[i];
+                    if(equals(S,State)){
+                        //console.log("Back1Repeted",State.copy(),S.copy());
+                        return "Back"
+                    }
+                }
+                if(!State[4]){
+                    if(!peacefulShore(State[1])) {
+                        //console.log("Back2NotPeacefulShore",State.copy());
+                        return "Back"
+                    }
+                }else{
+                    if(!peacefulShore(State[3])) {
+                        //console.log("Back3NotPeacefulShore  ",State.copy());
+                        return "Back"
+                    }
+                }
+                //console.log(State);
+                //console.log("Step1",State.copy());
+                return "Step"
+            }
+            function peacefulShore(Shore) {
+                if(Shore.lenght==0){
+                    return true;
+                }
+                for (let i = 0; i < Shore.length; i++) {
+                    const a = Shore[i];
+                    for (let j = 0; j < Shore.length; j++) {
+                        const b = Shore[j];
+                        if(a==b+1){
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+            function equals(a,b) {
+                if(typeof(a)==typeof(b)){ // si son los dos la misma cosa
+                    if(typeof(a) == typeof([])){ // si son arrays
+                        if(a.lenght == b.lenght){ // si son igual de largos
+                            for (let i = 0; i < a.length; i++) { // mira todos sus elmentos
+                                if (!equals(a[i],b[i])) return false
+                            }
+                            return true
+                        }else{ // si no son igual de largos
+                            return false
+                        }
+                    }else{ // si no son arrays
+                        //console.log("a == b returinig: " + a==b)
+                        return a==b;
+                    }
+                }else{ // si no son los dos la misma cosa
+                    return false
+                }
+            }
+            function viaje(accion,i,state){
+                var ret = state.copy();
+                ret[4] = !ret[4];
+                if(accion == "llevar"){
+                    var name = state[0][i];
+                    var poder = state[1][i];
+                    ret[2].push(name);
+                    ret[3].push(poder);
+                    ret[0].splice(i,1);
+                    ret[1].splice(i,1);
+
+                }else if(accion == "traer"){
+                    var name = state[2][i];
+                    var poder = state[3][i];
+                    ret[0].push(name);
+                    ret[1].push(poder);
+                    ret[2].splice(i,1);
+                    ret[3].splice(i,1);
+                }
+                return ret;
+            }
+            Array.prototype.copy = function(){
+                let ret = [];
+                for (let i = 0; i < this.length; i++) {
+                    const element = this[i];
+                    if(typeof(element) == typeof([])){
+                        ret.push(element.copy());
+                    }else{
+                        ret.push(element);
+                    }
+                }
+                
+                
+                return ret
+            }
+            step(inicialState,[],"");
+            if(!found){
+                console.log("no se puede");
+            }
+        </script>
+    </body>
+</html>
+
+
+
