@@ -1,0 +1,152 @@
+<html>
+    <head>
+        <style>
+        </style>
+    </head>
+    <body>  
+        Proposición:<input id="input" type="text"></input><br>
+        <button onclick="Main()">Tabla de verdad</button><br>
+        <div id="Sitio para la tabla"></div><br>
+        Or: aOb
+        And: aYb
+        No: !a
+        Implicación: a=>b / b<=a
+        Doble implicación: a==b
+        Xor: aXb
+        Las variables deben estar en minuscula
+        Están acepados los símbolos (),[]y{}
+        <script>
+            let input = document.getElementById("input");
+            var ML = [
+                    ["!V","F"],
+                    ["!F","V"],
+                    ["VYV","V"],
+                    ["VYF","F"],
+                    ["FYV","F"],
+                    ["FYF","F"],
+                    ["VOV","V"],
+                    ["VOF","V"],
+                    ["FOV","V"],
+                    ["FOF","F"],
+                    ["V==V","V"],
+                    ["V==F","F"],
+                    ["F==V","F"],
+                    ["F==F","V"],
+                    ["V=>V","V"],
+                    ["V=>F","F"],
+                    ["F=>V","V"],
+                    ["F=>F","V"],
+                    ["V<=V","V"],
+                    ["V<=F","V"],
+                    ["F<=V","F"],
+                    ["F<=F","V"],
+                    ["(V)","V"],
+                    ["(F)","F"],
+                    ["[V]","V"],
+                    ["[F]","F"],
+                    ["{V}","V"],
+                    ["{F}","F"],
+                    ["VXV","F"],
+                    ["VXF","V"],
+                    ["FXV","V"],
+                    ["FXF","F"],
+                    [" ",""],
+                ]
+            function Main(){
+                var prop = input.value
+                var vars = [];
+                var tablaDeVerdad = [];
+                
+                for (let i = 0; i < prop.length; i++) {
+                    if(prop.substring(i,i+1)!="O"&&
+                    prop.substring(i,i+1)!="Y"&&
+                    prop.substring(i,i+1)!="="&&
+                    prop.substring(i,i+1)!="<"&&
+                    prop.substring(i,i+1)!=">"&&
+                    prop.substring(i,i+1)!="X"&&
+                    prop.substring(i,i+1)!=")"&&
+                    prop.substring(i,i+1)!="("&&
+                    prop.substring(i,i+1)!="{"&&
+                    prop.substring(i,i+1)!="}"&&
+                    prop.substring(i,i+1)!="]"&&
+                    prop.substring(i,i+1)!="["&&
+                    prop.substring(i,i+1)!="!"){
+                        var is = false;
+                        for (let j = 0; j < vars.length; j++) {
+                            const element = vars[j];
+                            //console.log("es \"" + element + "\" igual que \"" + prop.substring(i,i+1) + "\":" + (element == prop.substring(i,i+1)));
+                            
+                            if (element == prop.substring(i,i+1)){
+                                is = true;
+                            }                            
+                        }
+                        if(!is){
+                            vars.push(prop.substring(i,i+1));
+                        }
+                    }
+                }
+                //ya tengo los nombres de las variables en vars
+                console.log(vars);
+                
+                for (let fila = 0; fila < Math.pow(2,vars.length); fila++) {
+                    tablaDeVerdad.push([]);
+                    var buffer = prop;
+                    for (let i = 0; i < vars.length; i++) {
+                        var v = valorDeVarEnFila(i,fila)
+                        tablaDeVerdad[fila].push(v)
+                        buffer = replaceAPorBEnC(vars[i],v,buffer);
+                
+                    }
+                    tablaDeVerdad[fila].push(resuelve(buffer));
+                }
+                console.log(vars,tablaDeVerdad);
+            }
+            function resuelve(p) {
+                rep = true;
+                ret = p;
+                while(rep){
+                    rep = false;
+                    for (let i = 0; i < ML.length; i++) {
+                        const T = ML[i];
+                        var R = replaceAPorBEnC(T[0],T[1],ret);
+                        if(R!="erase una vez unaa replacement que falló y su programador, mu soso él, decidió no currarse un sistema de feedback bueno"){
+                            ret = R;
+                            rep = true;
+                        }
+                    }
+                }
+                return ret;
+            }
+            function CheckTextIMT(i,muestra,text){
+                console.log(text.substring(i,muestra.length)+"--"+muestra);
+                return text.substring(i,muestra.length) == muestra;
+            }
+            function valorDeVarEnFila(varI,fila) {
+                if(((fila/Math.pow(2,varI))%2)<1) return "V"
+                else return "F"
+            }            
+            function replaceAPorBEnC(A,B,C) {
+                var ret = C;
+                for (let i = 0; i < ret.length; i++) {
+                    const element = ret.substring(i,i+A.length);
+                    //console.log(element,i,i+A.length)
+
+                    if(element == A){                        
+                        ret = ret.substring(0,i) + B + ret.substring(i+A.length);
+                        i = -1;
+                        continue;
+                    }
+                    
+                }
+                if(ret == C){
+                    return "erase una vez unaa replacement que falló y su programador, mu soso él, decidió no currarse un sistema de feedback bueno";
+                }
+                return ret;
+            }
+        </script>
+    </body>
+</html>
+
+
+
+
