@@ -1,20 +1,42 @@
 <html>
     <head>
         <style>
+            button,body{
+                font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+                border-collapse: collapse;
+                width: 100%;
+            }
+
+            td, #customers th {
+                border: 1px solid #ddd;
+                padding: 8px;
+            }
+
+            tr:nth-child(even){background-color: #f2f2f2;}
+
+            tr:hover {background-color: #ddd;}
+
+            th {
+                padding-top: 12px;
+                padding-bottom: 12px;
+                text-align: left;
+                background-color: #4CAF50;
+                color: white;
+            }
         </style>
     </head>
     <body>  
         Proposición:<input id="input" type="text"></input><br>
-        <button onclick="Main()">Tabla de verdad</button><br>
+        <button onclick="Main()">Generar la tabla de verdad</button><br>
         <div id="Sitio para la tabla"></div><br>
-        Or: aOb
-        And: aYb
-        No: !a
-        Implicación: a=>b / b<=a
-        Doble implicación: a==b
-        Xor: aXb
-        Las variables deben estar en minuscula
-        Están acepados los símbolos (),[]y{}
+        Or: aOb<br>
+        And: aYb<br>
+        No: !a<br>
+        Implicación:a=>b / b<=a<br>
+        Doble implicación: a==b<br>
+        Xor:        aXb<br>
+        Las variables deben estar en minuscula<br>
+        Están acepados los símbolos (),[]y{}<br>
         <script>
             let input = document.getElementById("input");
             var ML = [
@@ -53,6 +75,13 @@
                     [" ",""],
                 ]
             function Main(){
+
+                var myNode = document.getElementById("Sitio para la tabla");
+                while (myNode.firstChild) {
+                    myNode.removeChild(myNode.firstChild);
+                }
+
+
                 var prop = input.value
                 var vars = [];
                 var tablaDeVerdad = [];
@@ -87,19 +116,24 @@
                 }
                 //ya tengo los nombres de las variables en vars
                 console.log(vars);
-                
-                for (let fila = 0; fila < Math.pow(2,vars.length); fila++) {
+                tablaDeVerdad.push([]);
+                for (let i = 0; i < vars.length; i++) {
+                    tablaDeVerdad[0].push(vars[i])
+                }
+                tablaDeVerdad[0].push(prop)
+                for (let fila = 1; fila < Math.pow(2,vars.length); fila++) {
                     tablaDeVerdad.push([]);
                     var buffer = prop;
                     for (let i = 0; i < vars.length; i++) {
-                        var v = valorDeVarEnFila(i,fila)
+                        var v = valorDeVarEnFila(i-1,fila)
                         tablaDeVerdad[fila].push(v)
                         buffer = replaceAPorBEnC(vars[i],v,buffer);
                 
                     }
                     tablaDeVerdad[fila].push(resuelve(buffer));
                 }
-                console.log(vars,tablaDeVerdad);
+                //console.log(vars,tablaDeVerdad);
+                document.getElementById("Sitio para la tabla").appendChild(createTable(tablaDeVerdad)); 
             }
             function resuelve(p) {
                 rep = true;
@@ -142,6 +176,25 @@
                     return "erase una vez unaa replacement que falló y su programador, mu soso él, decidió no currarse un sistema de feedback bueno";
                 }
                 return ret;
+            }
+            function createTable(tableData) {
+                var table = document.createElement('table');
+                var tableBody = document.createElement('tbody');
+
+                tableData.forEach(function(rowData) {
+                    var row = document.createElement('tr');
+
+                    rowData.forEach(function(cellData) {
+                    var cell = document.createElement('td');
+                    cell.appendChild(document.createTextNode(cellData));
+                    row.appendChild(cell);
+                    });
+
+                    tableBody.appendChild(row);
+                });
+
+                table.appendChild(tableBody);
+                return table;
             }
         </script>
     </body>
