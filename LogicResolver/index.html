@@ -35,8 +35,8 @@
         Implicación:a=>b / b<=a<br>
         Doble implicación: a==b<br>
         Xor:        aXb<br>
-        Las variables deben estar en minuscula<br>
-        Están acepados los símbolos (),[]y{}<br>
+        Las variables deben estar en minúscula<br>
+        Están aceptados los símbolos (), [] y {}<br>
         <script>
             let input = document.getElementById("input");
             var ML = [
@@ -126,7 +126,7 @@
                     tablaDeVerdad.push([]);
                     var buffer = prop;
                     for (let i = 0; i < vars.length; i++) {
-                        var v = valorDeVarEnFila(i-1,fila)
+                        var v = valorDeVarEnFila(i,fila-1)
                         tablaDeVerdad[fila].push(v)
                         buffer = replaceAPorBEnC(vars[i],v,buffer);
                 
