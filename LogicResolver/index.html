@@ -122,7 +122,7 @@
                     tablaDeVerdad[0].push(vars[i])
                 }
                 tablaDeVerdad[0].push(prop)
-                for (let fila = 1; fila < Math.pow(2,vars.length); fila++) {
+                for (let fila = 1; fila < Math.pow(2,vars.length)+1; fila++) {
                     tablaDeVerdad.push([]);
                     var buffer = prop;
                     for (let i = 0; i < vars.length; i++) {
