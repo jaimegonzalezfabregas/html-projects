@@ -19,10 +19,90 @@
         <canvas id="canvas" width="1920" height="1080"></canvas>
         <script>
 	    var canvas = document.getElementById("canvas");
+                let ratonx = 0;
+            let ratony = 0;
             var ctx = canvas.getContext("2d");
             var keys = [];
             window.onkeyup = function(e) { keys[e.keyCode] = false; }
             window.onkeydown = function(e) { keys[e.keyCode] = true; }
+            var dataBase = [];
+            var inputMode = false;
+            var bufrad = 10;
+            
+            
+            tick();
+            function tick(){
+                ctx.fillRect(0, 0, canvas.height, canvas.width);
+                canvas.height = canvas.clientHeight;
+                canvas.width = canvas.clientWidth;
+
+                for (let i = 0; i < dataBase.length; i++) {
+                    const drawing = dataBase[i];
+                    drawcircle(drawing[0],drawing[1],drawing[2]);
+                }
+                if(inputMode){
+                    drawcircle(ratonx,ratony,bufrad);
+                }
+                if(keys[78]){
+                    inputMode = true;
+                }
+                if(inputMode && !keys[78]){
+                    dataBase.push([ratonx,ratony,bufrad]);
+                    inputMode = false;
+                }
+
+                for (let h = 0; h < canvas.height/30; h++) {
+                    for (let w = 0; w < canvas.width/30; w++) {
+                        let E = Ein(w*30,h*30);
+                        if(h%100==0&&w%100==0){
+                            console.log(E);
+                        }
+                        drawline(w*30,h*30,w*30+E[0],h*30+E[1]);
+                    }
+                }
+
+
+                setTimeout(() => {
+                    tick();
+                }, 50);
+            }
+            function Ein(x,y){
+                let ret = [0,0];
+                for (let i = 0; i < dataBase.length; i++) {
+                    let Ebuf = Einof(x,y,i)
+                    ret[0] = ret[0] + acotador(Ebuf[0]);
+                    ret[1] = ret[1] + acotador(Ebuf[1]);
+                }
+                return ret;
+            }
+            function acotador(x) {
+                return (x/Math.abs(x))*Math.sqrt(Math.sqrt(Math.abs(x*100)))*2
+            }
+            function Einof(x,y,i){
+                let subjet = dataBase[i]
+                let etot = subjet[2]/(Math.pow((x-subjet[0])/10,2)+Math.pow((y-subjet[1])/10,2))
+                let angle = Math.atan2(x-subjet[0],y-subjet[1])
+                return [etot*Math.sin(angle),etot*Math.cos(angle)]
+            }
+            function drawline(x1,y1,x2,y2) {
+                //console.log("line from:", x1,y1 , "to",x2,y2)
+                ctx.strokeStyle = rgb(0,0,0);
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+            function drawcircle(x,y,r){
+                if(r>0){
+                    ctx.strokeStyle = rgb(255,0,0);
+                }else if(r<0){
+                    ctx.strokeStyle = rgb(0,0,255);
+                }
+                ctx.beginPath();
+                ctx.arc(x, y, Math.abs(r), 0, 2 * Math.PI);
+                ctx.stroke();
+            }
             function drawXYrect(x, y, grosor, color) {
                 //console.log("fufo?")
                 if(color) 
@@ -53,6 +133,22 @@
                     return "0"+n;
 
                 }else return n
+            }
+            canvas.addEventListener('mousemove',function onMouseover(e){
+                ratonx = e.clientX;
+                ratony = e.clientY;
+            });
+
+            window.addEventListener('DOMMouseScroll', mouseWheelEvent);
+            window.addEventListener("wheel", mouseWheelEvent);
+            function mouseWheelEvent(e){
+                //console.log(e.wheelDelta ? e.wheelDelta : -e.detail);
+                var movement = (e.wheelDelta ? e.wheelDelta : -e.detail)/120;
+                if(movement>0){
+                    bufrad = bufrad + 5;
+                }else if (movement<0){
+                    bufrad = bufrad - 5;
+                }
             }
         </script>
     </body>
