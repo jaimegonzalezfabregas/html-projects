@@ -1,0 +1,268 @@
+<html>
+    <head>
+        <style>
+            canvas {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            body{
+                width: 100%;
+                height: 100%;
+                margin: 0px;
+                padding: 0px;
+            }
+        </style>
+    </head>
+    <body>  
+        <canvas id="canvas" width="1920" height="1080"></canvas>
+        <script>
+	        var canvas = document.getElementById("canvas");
+            var ctx = canvas.getContext("2d");
+            var afps = 24;
+            var ratonx;
+            var ratony;
+            var g = 1;
+            var active = 0;
+            var z = 2;
+            var pivotx = 0;
+            var pivoty = 0;
+            var pendulumsV = [
+                //l|t|e|pause
+                [10,0,0.5,true],
+                [30,0,0.5,true],
+                [50,0,0.5,true],
+                [70,0,0.5,true],
+                [90,0,0.5,true],
+                [110,0,0.5,true],
+                [130,0,0.5,true],
+                [150,0,0.5,true],
+                [170,0,0.5,true],
+                [190,0,0.5,true],
+                [210,0,0.5,true],
+                [230,0,0.5,true],
+                [250,0,0.5,true],
+                [270,0,0.5,true],
+                [290,0,0.5,true],
+                [310,0,0.5,true],
+                [330,0,0.5,true],
+                [350,0,0.5,true],
+                [370,0,0.5,true],
+                [390,0,0.5,true],
+                [410,0,0.5,true],
+                [430,0,0.5,true],
+                [450,0,0.5,true],
+                [470,0,0.5,true],
+            ];
+            var pendulumsR = [
+                [1000,1000]
+            ]
+
+            var keys = [];
+            window.onkeyup = function(e) { keys[e.keyCode] = false; }
+            window.onkeydown = function(e) { keys[e.keyCode] = true; }
+            tick();
+            function tick(){
+                pivotx = canvas.width/2;
+                pivoty = canvas.height/10;
+                ctx.fillRect(0, 0, canvas.height, canvas.width);
+                canvas.height = canvas.clientHeight;
+                canvas.width = canvas.clientWidth;
+                if(keys[78]){//n
+                    keys[78]=false;
+                    pendulumsV.push([1,0,0.5,false]);
+                    active = pendulumsV.length-1;
+                }
+                if(keys[83]){//s
+                    for (let i = 0; i < pendulumsV.length; i++) {
+                        const p = pendulumsV[i];
+                        p[1]=0;
+                    }
+                }
+                for (let i = 0; i < pendulumsV.length; i++) {
+                    const element = pendulumsV[i];
+                    let rCords = rasterXY(element);
+                    pendulumsR[i] = rCords
+                    lineFromTo(pivotx,pivoty,rCords[0],rCords[1],rgb(200,200,200));
+
+                    drawCircleXYR(rCords[0],rCords[1],20);
+                    if(element[3]) element[1]++;
+
+                    
+                }
+                if(active != -1){
+                    drawXYrect(z*10,z*10,z*100,z*100,rgb(0,0,0));
+                    drawXYrect(z*20,z*20,z*35,z*35,rgb(100,100,100));
+                    drawXYrect(z*65,z*20,z*35,z*35,rgb(100,100,100));
+                    drawXYrect(z*20,z*65,z*35,z*35,rgb(100,100,100));
+                    var c;
+                    if(pendulumsV[active][3]){
+                        c = rgb(0,255,0)
+                    }else{
+                        c = rgb(255,0,0)
+                    }
+                    drawXYrect(z*65,z*65,z*35,z*35,c);
+                }
+                setTimeout(() => {
+                    tick();
+                }, 1000/afps);
+            }
+
+            function rasterXY(p) {
+                let angle = Math.sin(p[1]*20/p[0])*p[2];
+                let y = Math.cos(angle)*p[0];
+                let x = Math.sin(angle)*p[0];
+                return [x+pivotx,y+pivoty];
+
+            }
+            function drawXYrect(x, y, w, h, color) {
+                //console.log("fufo?")
+                if(color) 
+                  ctx.fillStyle = color; 
+                else 
+                  ctx.fillStyle = "#555555";
+                ctx.fillRect(x, y, w, h);
+            }
+            function drawCircleXYR(x,y,r,ic,oc) {
+                ctx.lineWidth = 5;
+                if(ic) 
+                    ctx.fillStyle = ic; 
+                else 
+                    ctx.fillStyle = rgb(0,0,0);
+
+                if(oc) 
+                    ctx.strokeStyle = oc; 
+                else 
+                    ctx.strokeStyle = rgb(255,255,255);
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, 2 * Math.PI);
+                ctx.stroke();
+                ctx.fill();
+            }
+            function rgb(r,g,b) {
+                var r_ = check(decToHex(r));
+                var g_ = check(decToHex(g));
+                var b_ = check(decToHex(b));
+                return "#"+r_+g_+b_;
+            }
+
+            function decToHex(n) {
+                if(n<0){
+                    n = 0xFFFFFFFF + n + 1;
+                }
+                return Math.round(n).toString(16).toUpperCase();
+            }
+
+            function check(n){
+                //console.log(n)
+                if(n.length>2){
+                    return "FF";
+                }else if (n.length<2){
+                    return "0"+n;
+
+                }else return n
+            }
+            canvas.addEventListener('mousemove',function onMouseover(e){
+                ratonx = e.clientX;
+                ratony = e.clientY;
+            });
+            canvas.addEventListener('mousedown',function onMouseover(e){
+                for (let i = 0; i < pendulumsR.length; i++) {
+                    const pcords = pendulumsR[i];
+                    if(30>distance(ratonx,ratony,pcords[0],pcords[1])){
+                        active = i;
+                        return;
+                    }
+                }
+                //x,y,x,y
+                //z*65,z*65,z*35,z*35
+                if(ratonx>z*65 && ratonx<z*(65+35) && ratony>z*65 && ratony<z*(65+35)){
+                    pendulumsV[active][3]=!pendulumsV[active][3];
+                    return;
+                }
+                active = -1;
+            });
+            function distance(x1,y1,x2,y2){
+                return Math.sqrt(Math.pow(x1-x2,2)+Math.pow(y1-y2,2));
+            }
+            window.addEventListener('DOMMouseScroll', mouseWheelEvent);
+            window.addEventListener("wheel", mouseWheelEvent);
+            function mouseWheelEvent(e){
+                //console.log(e.wheelDelta ? e.wheelDelta : -e.detail);
+                if(active != -1){
+                    var PTC = propertyToChange(ratonx,ratony);
+                    //console.log(PTC+":PTC");
+                    //l|t|e|pause
+                    if(PTC!="false"){
+                        var movement = (e.wheelDelta ? e.wheelDelta : -e.detail)/120;
+                        if(movement>0){
+                            
+                            if(PTC==0){
+                                pendulumsV[active][PTC]=pendulumsV[active][PTC]+10;
+                            }
+                            if(PTC==1){
+                                pendulumsV[active][PTC]=pendulumsV[active][PTC]+1;
+                            }
+                            if(PTC==2){
+                                pendulumsV[active][PTC]=pendulumsV[active][PTC]+0.1;
+                                if(pendulumsV[active][PTC]>1.5){
+                                    pendulumsV[active][PTC]=1.5
+                                }
+                            }
+                            console.log(PTC+":"+pendulumsV[active][PTC]);
+                            
+                        }else if(movement<0){
+                            if(PTC==0){
+                                pendulumsV[active][PTC]=pendulumsV[active][PTC]-10;
+                                if(pendulumsV[active][PTC]<0){
+                                    pendulumsV[active][PTC]=0
+                                }
+                            }
+                            if(PTC==1){
+                                pendulumsV[active][PTC]=pendulumsV[active][PTC]-1;
+                            }
+                            if(PTC==2){
+                                pendulumsV[active][PTC]=pendulumsV[active][PTC]-0.1;
+                                if(pendulumsV[active][PTC]<0){
+                                    pendulumsV[active][PTC]=0
+                                }
+                            }
+                            console.log(PTC+":"+pendulumsV[active][PTC]);
+                        }
+                    }
+                    
+                }
+            }
+            function propertyToChange(x,y){
+                console.log(x>z*20 , x<z*(20+35) , y>z*20 , y<z*(20+35))
+                console.log(x>z*20 && x<z*(20+35) && y>z*20 && y<z*(20+35))
+
+                if(x>z*20 && x<z*(20+35) && y>z*20 && y<z*(20+35)){
+                    console.log("hey")
+
+                    return 0;
+                }
+                if(x>z*20 && x<z*(20+35) && y>z*65 && y<z*(65+35)){
+                    return 1;
+                }
+                if(x>z*65 && x<z*(65+35) && y>z*20 && y<z*(20+35)){
+                    return 2;
+                }
+                return "false";
+            }
+            function lineFromTo(x1,y1,x2,y2,c) {
+                ctx.strokeStyle = c;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+        </script>
+    </body>
+</html>
+
+
+
+

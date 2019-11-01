@@ -1,0 +1,182 @@
+<html>
+    <head>
+        <style>
+            canvas {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            body{
+                width: 100%;
+                height: 100%;
+                margin: 0px;
+                padding: 0px;
+            }
+        </style>
+    </head>
+    <body>  
+        <canvas id="canvas" width="1920" height="1080"></canvas>
+        <script>
+	        let canvas = document.getElementById("canvas");
+            let ctx = canvas.getContext("2d");
+            let keys = [];
+            let lastWidth = 0;
+            let lastHeight = 0;
+            let loops = 0;
+            const initialData = [
+                //[x,y,vx,vy]
+                [100,100,0,10,[]],
+                [200,100,-10,0,[]],
+                [100,200,10,0,[]],
+                [200,200,0,-10,[]],
+            ];
+            let datastorage = [];
+            let databuffer = [];
+            let historial = [
+                [],
+                [],
+                [],
+                [],
+            ]
+
+            window.onkeyup = function(e) { keys[e.keyCode] = false; }
+            window.onkeydown = function(e) { keys[e.keyCode] = true; }
+            start();
+            function start() {
+                console.log(canvas.clientWidth,canvas.clientHeight);
+                datastorage = clone(initialData);
+                databuffer = clone(datastorage);
+                tick();
+            }
+            function tick() {
+                let brake=true;
+                ctx.fillRect(0, 0, canvas.height, canvas.width);
+                lastHeight = canvas.height;
+                lastWidth = canvas.width;
+                canvas.height = canvas.clientHeight;
+                canvas.width = canvas.clientWidth;
+                if( lastHeight != canvas.height || lastWidth != canvas.width){
+                    start();
+                    brake = false
+                }
+                if(brake){
+                    for (let p = 0; p < datastorage.length; p++) {
+                        const element = clone(datastorage[p]);
+                        let ax = 0;
+                        let ay = 0;
+                        for (let i = 0; i < datastorage.length; i++) {
+                            const wip = clone(datastorage[i]);
+                            if(i!=p){
+                                let modulo = 200/Math.pow(distance(wip[0],wip[1],element[0],element[1]),2);
+                                let angle = Math.atan2(wip[1]-element[1],wip[0]-element[0]);
+                                let pax = Math.cos(angle)*modulo;
+                                let pay = Math.sin(angle)*modulo;
+                                ax = ax + pax;
+                                ay = ay + pay;
+                            }
+                        }
+                        element[2]=element[2]+ax
+                        element[3]=element[3]+ay
+                        element[0]=element[0]+element[2]/20;
+                        element[1]=element[1]+element[3]/20;
+                        databuffer[p] = element;
+                    }
+                    datastorage = clone(databuffer);
+                    for (let i = 0; i < datastorage.length; i++) {
+                        const p = datastorage[i];
+                        historial[i].push([p[0],p[1]]);
+                        drawCircleXYR(p[0],p[1],20);
+                    }
+                    if(loops>1000000){
+                        for (let i = 0; i < historial.length; i++) {
+                            const path = historial[i];
+                            for (let point = 0; point < path.length-1; point++) {
+                                const pos = path[point];
+                                const pos2 = path[point+1];
+                                lineFromTo(pos[0],pos[1],pos2[0],pos2[1],rgb(0,0,0));
+                            }
+                        }
+                    }
+                    
+                    
+                    setTimeout(() => {
+                        loops++;
+                        tick();
+                    }, 0);
+                }
+            }
+            function drawCircleXYR(x,y,r,ic,oc) {
+                ctx.lineWidth = 5;
+                if(ic) 
+                    ctx.fillStyle = ic; 
+                else 
+                    ctx.fillStyle = rgb(0,0,0);
+
+                if(oc) 
+                    ctx.strokeStyle = oc; 
+                else 
+                    ctx.strokeStyle = rgb(255,255,255);
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, 2 * Math.PI);
+                ctx.stroke();
+                ctx.fill();
+            }
+            function distance(x1,y1,x2,y2){
+                return Math.sqrt(Math.pow(x1-x2,2)+Math.pow(y1-y2,2));
+            }
+            function drawXYrect(x, y, grosor, color) {
+                //console.log("fufo?")
+                if(color) 
+                  ctx.fillStyle = color; 
+                else 
+                  ctx.fillStyle = "#555555";
+                ctx.fillRect(x, y, grosor, grosor);
+            }
+            function rgb(r,g,b) {
+                let r_ = check(decToHex(r));
+                let g_ = check(decToHex(g));
+                let b_ = check(decToHex(b));
+                return "#"+r_+g_+b_;
+            }
+
+            function decToHex(n) {
+                if(n<0){
+                    n = 0xFFFFFFFF + n + 1;
+                }
+                return Math.round(n).toString(16).toUpperCase();
+            }
+
+            function check(n){
+                //console.log(n)
+                if(n.length>2){
+                    return "FF";
+                }else if (n.length<2){
+                    return "0"+n;
+
+                }else return n
+            }
+            function clone(subjet){
+                if(Array.isArray(subjet)){
+                    var ret = []
+                    for (let i = 0; i < subjet.length; i++) {
+                        const element = subjet[i];
+                        ret.push(clone(element));
+                    }
+                    return ret;
+                }else{
+                    return subjet;
+                }
+            }
+            function lineFromTo(x1,y1,x2,y2,c) {
+                ctx.strokeStyle = c+"11";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+        </script>
+    </body>
+</html>
+

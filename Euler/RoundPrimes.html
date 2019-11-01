@@ -1,0 +1,47 @@
+<html>
+    <head>
+        
+    </head>
+    <body>  
+        <script>
+	    start();
+        function start() {
+            let top = 100;
+            let solution = 0;
+
+            for (let i = 2; i < top; i++) {
+                if(EsPrimoCircular(i)){
+                    solution++;
+                    console.log(i);
+                }
+            }
+            console.log("count:"+solution);
+        }
+        function EsPrimo(n) {
+            
+            for (let test = 2; test <= n/2; test++) {
+                if(n % test==0){
+                    return false
+                }
+            }
+            return true;
+        }
+        function EsPrimoCircular(n) {
+            let nstr = n+""
+            //console.log("1:"+nstr,nstr.length);
+            for (let i = 0; i < nstr.length; i++) {
+                let rotatedN = nstr.substring(i)+nstr.substring(0,i)
+                if(!EsPrimo(parseInt(rotatedN))){
+                    return false;
+                }               
+            }
+            return true;
+        }
+        
+        </script>
+    </body>
+</html>
+
+
+
+
