@@ -1,0 +1,560 @@
+<html>
+    <head>
+        <style>
+            canvas {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            body{
+                width: 100%;
+                height: 100%;
+                margin: 0px;
+                padding: 0px;
+            }
+        </style>
+    </head>
+    <body>  
+        <canvas id="canvas" width="1920" height="1080"></canvas>
+        <script>
+	        var canvas = document.getElementById("canvas");
+            var ctx = canvas.getContext("2d");
+            var keys = [];
+            window.onkeyup = function(e) { keys[e.keyCode] = false; }
+            window.onkeydown = function(e) { keys[e.keyCode] = true; }
+            var PlantillaTablero = [
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0], 
+                
+            ];
+            var tablero = [
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0],
+                [0,0,0,0,0,0,0,0,0,0], 
+                
+            ];
+            console.log(clone(tablero));
+            var fichas = [
+                [[1,0],
+                 [1,0],
+                 [1,1]],
+
+                [[0,1],
+                 [0,1],
+                 [1,1]],
+
+                [[0,1],
+                 [1,1],
+                 [1,0]],
+
+                [[1,0],
+                 [1,1],
+                 [0,1]],
+
+                [[1,0],
+                 [1,1],
+                 [1,0]],
+
+                [[1,1],
+                 [1,1]],
+
+                [[1],
+                 [1],
+                 [1],
+                 [1]],
+            ];
+            var FloatingX=4;
+            var FloatingY=0;
+            var FloatingRot=0;
+            var fichaN=0;
+            var PixelSize = 20;
+            var fallingTimer = 100;
+            var turningTimer = 10;
+            var SideMoveTimer = 10;
+            var GameState = "Run";
+
+            tick();
+            function GameOver(){
+                GameState = "Dead"
+            }
+            function tick(){
+
+                if(GameState=="Run"){
+                    //prepareCanvas
+                    ctx.fillRect(0, 0, canvas.height, canvas.width);
+                    canvas.height = canvas.clientHeight;
+                    canvas.width = canvas.clientWidth;
+                    drawXYHW(0,0,PlantillaTablero[0].length*PixelSize,PlantillaTablero.length*PixelSize,rgb(0,200,0));
+
+                    //bufferTurned
+                    var turned = clone(fichas[fichaN]);
+                    if(FloatingRot>0){
+                        for (let i = 0; i < FloatingRot; i++) {
+                            turned = turn(turned);                    
+                        }
+                    }else{
+                        for (let i = 0; i < FloatingRot*3; i++) {
+                            turned = turn(turned);                    
+                        }
+                    }
+                    //MoveFicha
+                    if(fallingTimer == 0){
+                        if(keys[40]){
+                            fallingTimer = 10;
+                        }else{
+                            fallingTimer = 100;
+                        }
+                        
+                        if(!Colision(fichaN,FloatingX,FloatingY+1,FloatingRot)){
+                            FloatingY=FloatingY+1;
+                            
+                        }else{
+                            SetFicha();
+                        }
+                    }
+                    if(SideMoveTimer == 0){
+                        if(keys[37]){//<--
+                            if(!Colision(fichaN,FloatingX-1,FloatingY,FloatingRot)){
+                                FloatingX--
+                                SideMoveTimer=30
+                            }
+                        }else if(keys[39]){//-->
+                            if(!Colision(fichaN,FloatingX+1,FloatingY,FloatingRot)){
+                                FloatingX++
+                                SideMoveTimer=30
+                            }
+                        }
+                    }
+                    if(!(keys[39]||keys[37])){
+                        SideMoveTimer=0;
+                    }
+                    if(turningTimer == 0){
+                        if(keys[38]){//UP(Turn)
+                            if(!Colision(fichaN,FloatingX,FloatingY,FloatingRot+1)){
+                                FloatingRot++
+                                turningTimer=30
+                            }
+                        }
+                    }
+                    if(!(keys[38])){
+                        turningTimer=0;
+                    }
+                    //DrawScreen
+                    for (let filan = 0; filan < tablero.length; filan++) {
+                        const fila = tablero[filan];
+                        for (let columnan = 0; columnan < fila.length; columnan++) {
+                            const value = fila[columnan];
+                            if(value == 1){
+                                drawXYrect(columnan*PixelSize,filan*PixelSize,PixelSize,rgb(0,0,0));
+                            }
+                        }
+                    }
+                    //DrawFloatingPiece
+                    for (let y = 0; y < turned.length; y++) {
+                        const fila = turned[y];
+                        for (let x = 0; x < fila.length; x++) {
+                            const conts = fila[x];
+                            if(conts==1){
+                                drawXYrect((FloatingX+x)*PixelSize,(FloatingY+y)*PixelSize,PixelSize,rgb(100,100,100));
+                            }
+                        }
+                    }
+                }else if(GameState=="Dead"){
+                    if(keys[82]){
+                        GameState = "Run";
+                        Tablero = clone(PlantillaTablero);
+                    }
+                }
+                //Repeat
+
+                fallingTimer--;
+                if(fallingTimer<0)fallingTimer=0;
+                turningTimer--;
+                if(turningTimer<0)turningTimer=0;
+                SideMoveTimer--;
+                if(SideMoveTimer<0)SideMoveTimer=0;
+
+
+                setTimeout(() => {
+                    tick();
+                }, 10);
+            }
+            //console.log(turn(
+            //    [
+            //        [1,0],
+            //        [1,0],
+            //        [1,1]
+            //    ]
+            //));
+            function SetFicha() {
+                var turned = clone(fichas[fichaN])
+                if(FloatingRot>0){
+                    for (let i = 0; i < FloatingRot; i++) {
+                        turned = turn(turned);                    
+                    }
+                }else{
+                    for (let i = 0; i < FloatingRot*3; i++) {
+                        turned = turn(turned);                    
+                    }
+                }
+                for (let y = 0; y < turned.length; y++) {
+                    const fila = turned[y];
+                    for (let x = 0; x < fila.length; x++) {
+                        const value = fila[x];
+                        if(value==1){
+                            tablero[y+FloatingY][x+FloatingX] = 1;
+                        }
+                    }
+                }
+                tablero = removeFilledRows(tablero);
+                fichaN = getWorstID();
+                FloatingX = 4;
+                FloatingY = 0;
+                if(Colision(fichaN,FloatingX,FloatingY,FloatingRot)){
+                    GameOver();
+                }
+            }
+            function removeFilledRows(table) {
+                var ret = clone(table);
+                for (let y = 0; y < ret.length; y++) {
+                    const fila = ret[y];
+                    var completada = true
+                    for (let i = 0; i < fila.length; i++) {
+                        const v = fila[i];
+                        if(v==0){
+                            completada = false
+                        }
+                    }
+                    if(completada){
+                        for (let i = y; i > 0; i--) {
+                            ret[i]=clone(ret[i-1]);
+                            
+                        }
+                        ret[0]=[0,0,0,0,0,0,0,0,0,0]
+                    }
+                }
+                return ret;
+            }
+            function getWorstID(){
+                var nota = 0;
+                var idret = 1;
+                for (let id = 0; id < fichas.length; id++) {
+                    const element = fichas[id];
+                    var notaWip = EvTableAndFichaBestCase(id);
+                    if(notaWip>nota){
+                        idret = id; 
+                        console.log("Cambiamos "+nota+" por "+notaWip)
+                        nota = notaWip; 
+                    }else if(notaWip==nota){
+                        if(Math.random()>0.5){
+                            idret = id; 
+                            console.log("Cambiamos "+nota+" por "+notaWip)
+                            nota = notaWip; 
+                        }
+                    }
+                }
+                console.log("WP is:"+idret)
+                return idret;
+            }
+            function EvTableAndFichaBestCase(FichaId) {
+                var ret = 1000000000000;
+                var retCase=[];
+                for (let y = 0; y < tablero.length; y++) {
+                    const fila = tablero[y];
+                    for (let x = 0; x < fila.length; x++) {
+                        const value = fila[x];
+                        for (let r = 0; r < 4; r++) {
+                            if(!Colision(FichaId,x,y,r)){
+                                var turned = clone(fichas[FichaId])
+                                if(r>0){
+                                    for (let i = 0; i < r; i++) {
+                                        turned = turn(turned);                    
+                                    }
+                                }else{
+                                    for (let i = 0; i < r*3; i++) {
+                                        turned = turn(turned);                    
+                                    }
+                                }
+                                var NewTable = clone(tablero);
+                                for (let y_ = 0; y_ < turned.length; y_++) {
+                                    const fila = turned[y_];
+                                    for (let x_ = 0; x_ < fila.length; x_++) {
+                                        const value = fila[x_];
+                                        if(value==1){
+                                            NewTable[y_+y][x_+x] = 1;
+                                        }
+                                    }
+                                }
+                                resultado = EvTable(NewTable);
+                                if(resultado == 0){
+                                    console.log("kjkefdiodjsnfodashbcfehabfcfhasdvudsfahufejsffhwqeuriwjfdbcgyftyhvfgtyuh");
+                                }
+                                if(ret>resultado){
+                                    ret = resultado;
+                                    retCase = NewTable
+                                }
+                            }
+                        }
+                    }
+                }
+                console.log(ret+"id "+FichaId+" BestCase:")
+                console.log(NewTable);
+                return ret;
+            }
+            function EvTable(table) {
+                return EvHoles(table)+EvSurface(table)*10+EvHeight(table)+EvFilasCompletadas(table)*100;
+            }
+            function EvFilasCompletadas(table) {
+                var ret = table.length;
+                for (let y = 0; y < table.length; y++) {
+                    const fila = table[y];
+                    var completada = true
+                    for (let i = 0; i < fila.length; i++) {
+                        const v = fila[i];
+                        if(v==0){
+                            completada = false
+                        }
+                    }
+                    if (completada) {
+                        ret--;
+                    }
+                }
+                //console.log(ret);
+                return ret;
+            }
+            function EvHeight(table) {
+                var height=[];
+                var notes = [];
+                for (let x = 0; x < table[0].length; x++) {
+                    const value = table[0];
+                    height.push(0);
+                    notes.push(false);
+                }
+                for (let y = 0; y < table.length; y++) {
+                    const fila = table[y];
+                    for (let x = 0; x < fila.length; x++) {
+                        const value = fila[x];
+                        if(value == 1){
+                            if(notes[x]==false){
+                                notes = true
+                                height[x] = table.length-y;
+                            }
+                        }
+                    }
+                }
+                var media = 0;
+                for (let i = 0; i < height.length; i++) {
+                    const h = height[i];
+                    media = media + h;
+                }
+                return media;
+            }
+            function EvSurface(table) {
+                var height=[];
+                var notes = [];
+                for (let x = 0; x < table[0].length; x++) {
+                    const value = table[0];
+                    height.push(0);
+                    notes.push(false);
+                }
+                for (let y = 0; y < table.length; y++) {
+                    const fila = table[y];
+                    for (let x = 0; x < fila.length; x++) {
+                        const value = fila[x];
+                        if(value == 1){
+                            if(notes[x]==false){
+                                notes = true
+                                height[x] = table.length-y;
+                            }
+                        }
+                    }
+                }
+                var ret = 0;
+                var media = 0;
+                for (let i = 0; i < height.length; i++) {
+                    const h = height[i];
+                    media = media + h;
+                }
+                media = media/height.length;
+                for (let i = 0; i < height.length; i++) {
+                    const h = height[i];
+                    ret = ret + Math.abs(media-h);
+                }
+                return ret;
+            }
+            function EvHoles(table) {
+                var height=[];
+                var density=[];
+                var notes = [];
+                for (let x = 0; x < table[0].length; x++) {
+                    const value = table[0];
+                    height.push(0);
+                    density.push(0);
+                    notes.push(false);
+                }
+                for (let y = 0; y < table.length; y++) {
+                    const fila = table[y];
+                    for (let x = 0; x < fila.length; x++) {
+                        const value = fila[x];
+                        if(value == 1){
+                            density[x]++;
+                            if(notes[x]==false){
+                                notes = true
+                                height[x] = table.length-y;
+                            }
+                        }
+                    }
+                }
+                var ret = 0;
+                for (let i = 0; i < height.length; i++) {
+                    const h = height[i];
+                    const d = density[i];
+                    ret = ret + h-d;
+                }
+                return ret;
+            }
+            function Colision(FichaId,FichaX,FichaY,FichaRot) {
+                var turned = clone(fichas[FichaId])
+                if(FichaRot>0){
+                    for (let i = 0; i < FichaRot; i++) {
+                        turned = turn(turned);                    
+                    }
+                }else{
+                    for (let i = 0; i < FichaRot*3; i++) {
+                        turned = turn(turned);                    
+                    }
+                }
+                //console.log(FichaId);
+                if(FichaX<0||FichaX>tablero[0].length-turned[0].length){
+                    return true;
+                }
+                if(FichaY>tablero.length-turned.length){
+                    return true;
+                }
+
+                for (let y = 0; y < tablero.length; y++) {
+                    const fila = tablero[y];
+                    for (let x = 0; x < fila.length; x++) {
+                        const value = fila[x];
+                        
+                        for (let yf = 0; yf < turned.length; yf++) {
+                            const filaf = turned[yf];
+                            for (let xf = 0; xf < filaf.length; xf++) {
+                                const valuef = filaf[xf];
+                                if(xf+FichaX==x&&yf+FichaY==y&& value==1&&valuef==1){
+                                    return true;
+                                }
+                            }
+                        }
+
+                    }
+                }
+
+                return false;
+            }
+            function turn(arr){
+                var ret = [];
+                for (let i = 0; i < arr[0].length; i++) {
+                    ret.push([]);
+                    for (let j = 0; j < arr.length; j++) {
+                        ret[i].push(0);
+                    }
+                }
+                //console.log(ret);
+                for (let y = 0; y < arr.length; y++) {
+                    const fila = arr[y];
+                    for (let x = 0; x < fila.length; x++) {
+                        const casilla = fila[x];
+                        ret[fila.length-x-1][y]=casilla;
+                    }
+                }
+                return ret;
+            }
+            function clone(subjet){
+                if(Array.isArray(subjet)){
+                    var ret = []
+                    for (let i = 0; i < subjet.length; i++) {
+                        const element = subjet[i];
+                        ret.push(clone(element));
+                    }
+                    return ret;
+                }else{
+                    return subjet;
+                }
+            }
+            function drawXYrect(x, y, grosor, color) {
+                //console.log("fufo?")
+                if(color) 
+                  ctx.fillStyle = color; 
+                else 
+                  ctx.fillStyle = "#555555";
+                ctx.fillRect(x, y, grosor, grosor);
+            }
+            function drawXYHW(x, y, h, w, color) {
+                //console.log("fufo?")
+                if(color) 
+                  ctx.fillStyle = color; 
+                else 
+                  ctx.fillStyle = "#555555";
+                ctx.fillRect(x, y, h, w);
+            }
+            function rgb(r,g,b) {
+                var r_ = check(decToHex(r));
+                var g_ = check(decToHex(g));
+                var b_ = check(decToHex(b));
+                return "#"+r_+g_+b_;
+            }
+            function decToHex(n) {
+                if(n<0){
+                    n = 0xFFFFFFFF + n + 1;
+                }
+                return Math.round(n).toString(16).toUpperCase();
+            }
+            function check(n){
+                //console.log(n)
+                if(n.length>2){
+                    return "FF";
+                }else if (n.length<2){
+                    return "0"+n;
+
+                }else return n
+            }
+        </script>
+    </body>
+</html>
+
+
+
+
