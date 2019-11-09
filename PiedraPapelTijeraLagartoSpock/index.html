@@ -1,0 +1,270 @@
+<html>
+    <head>
+        <style>
+            canvas {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            body{
+                width: 100%;
+                height: 100%;
+                margin: 0px;
+                padding: 0px;
+            }
+        </style>
+    </head>
+    <body>  
+        <canvas id="canvas" width="1920" height="1080"></canvas>
+        <script>
+	    var canvas = document.getElementById("canvas");
+            let ctx = canvas.getContext("2d");
+            let keys = [];
+            let ratony = 0;
+            let ratonx = 0;
+            let resolutionratio = 20;
+            let unorganizedmap = [[10,20,"S",10],[20,10,"Pi",10],[10,10,"L",10],[20,20,"T",10]];
+            let buffermap
+            window.onkeyup = function(e) { keys[e.keyCode] = false; }
+            window.onkeydown = function(e) { keys[e.keyCode] = true; }
+            
+            function tick(){
+                //console.log(unorganizedmap.copy());
+                ctx.fillRect(0, 0, canvas.height, canvas.width);
+                canvas.height = canvas.clientHeight;
+                canvas.width = canvas.clientWidth;
+                buffermap = unorganizedmap.copy();
+                for (let i = 0; i < unorganizedmap.length; i++) {
+                    
+                    //console.log(i)
+                    const cell = unorganizedmap[i].copy();
+                    if(cell!=["Corrupted"]){
+                        let psvs;
+                        let got = true;
+                        let turns = 0;
+                        while (got){
+                            turns++
+                            if(turns>10){
+                                unorganizedmap[i]=["Corrupted"]
+                                got = false
+                                break;
+                            }
+                            let relativeVS = TranslatePos(Math.floor(Math.random()*7.99));
+                            psvs = getcellXY([cell[0]+relativeVS[0],cell[1]+relativeVS[1]]);
+                            if(psvs == "TryAgain"){
+                            }else{   
+                                got = false;
+                                //console.log("outOfHere",got)
+                            }
+                        }
+                        if(turns>10){
+                            continue;
+                        }
+                        let fightres = fight(cell,psvs[1]);
+                        buffermap[i]=fightres[0];
+                        if(psvs[0]=="NEW"){
+                            buffermap.push(fightres[1]);
+                            //console.log(fightres[1]);
+                        }else{
+                            buffermap[psvs[0]]=fightres[1];
+                        }
+                    }
+                }
+                unorganizedmap = buffermap.copy()
+                for (let i = 0; i  < unorganizedmap.length; i++) {
+                    const drawip = unorganizedmap[i];
+
+                    if(drawip!=["Corrupted"]){
+                        drawXYrect(drawip[1]*resolutionratio,drawip[0]*resolutionratio,resolutionratio,getteamcolor(drawip[2]))
+                    }
+                }
+                setTimeout(() => {
+                    if(unorganizedmap.length<100000){
+                        tick();
+                    }
+                }, 7);
+            }
+            function fight(cell1,cell2){
+                //console.log(cell1,cell2)
+                let retc1 = cell1.copy();
+                let retc2 = cell2.copy();
+
+                let winner = Fwinner(retc1[2],retc2[2]);
+                //console.log(winner)
+                if(winner == 0){
+                    //retc1[3]++;
+                    //retc2[3]++;
+                    if(retc2[3]>=10){
+                        retc2[3] = 10;
+                    };
+                    if(retc1[3]>=10){
+                        retc1[3] = 10;
+                    };
+                }
+                if(winner == 2){
+                    retc2[3]++
+                    if(retc2[3]>=10){
+                        retc2[3] = 10;
+                    };
+                    retc1[3]--
+                    if(retc1[3]<=0){
+                        retc1[2]=retc2[2]
+                        retc1[3]=3;
+                    }
+                }
+                if(winner == 1){
+                    retc1[3]++
+                    if(retc1[3]>=10){
+                        retc1[3] = 10;
+                    };
+                    retc2[3]--
+                    if(retc2[3]<=0){
+                        retc2[2]=retc1[2]
+                        retc2[3]=3;
+                    }
+                }
+                if(cell1[2]!="W"&&cell2[2]!="W"&&cell1[2]!=cell2[2]){
+                    //console.log(winner,cell1,cell2,retc1,retc2)
+
+                }
+                return[retc1,retc2];
+            }
+            function Fwinner (c1,c2){
+                if(c1==c2) return 0;
+                if(c1=="W") return 2;
+                if(c2=="W") return 1;
+                let join = c1+"-"+c2
+                switch(join){
+                    case "T-L": return 1;
+                    case "T-Pa": return 1;
+                    case "S-Pi": return 1;
+                    case "S-T": return 1;
+                    case "L-S": return 1;
+                    case "L-Pa": return 1;
+                    case "Pi-T": return 1;
+                    case "Pi-L": return 1;
+                    case "Pa-S": return 1;
+                    case "Pa-Pi": return 1;
+
+                    case "L-T": return 2;
+                    case "Pa-T": return 2;
+                    case "Pi-S": return 2;
+                    case "T-S": return 2;
+                    case "S-L": return 2;
+                    case "Pa-L": return 2;
+                    case "T-Pi": return 2;
+                    case "L-Pi": return 2;
+                    case "S-Pa": return 2;
+                    case "Pi-Pa": return 2;
+                }
+                console.log("me meurroooo")
+            }
+            function getteamcolor(t){
+                switch(t){
+                    case "W":  return rgb(255,0,255);
+                    case "Pi": return rgb(99,99,99);
+                    case "Pa": return rgb(200,200,200);
+                    case "T":  return rgb(235, 255, 100);
+                    case "L":  return rgb(50,200,50);
+                    case "S":  return rgb(100,100,255);
+                }
+                return rgb(255, 0, 255);
+            }
+            function getcellXY(pos){
+                if(pos[0]<0||pos[0]>canvas.height/resolutionratio){
+                    return "TryAgain";
+                }
+                if(pos[1]<0||pos[1]>canvas.width/resolutionratio){
+                    return "TryAgain";
+                }
+                for (let i = 0; i < unorganizedmap.length; i++) {
+                    const cell = unorganizedmap[i];
+                    if(cell[0]==pos[0]&&cell[1]==pos[1]){
+                        return [i,cell];
+                    }
+                }
+                return ["NEW",[pos[0],pos[1],"W",0]];
+            }
+            function TranslatePos(i) {
+                if(i==0) return [1,1];
+                if(i==1) return [-1,1];
+                if(i==2) return [1,-1];
+                if(i==3) return [-1,-1];
+                if(i==4) return [0,1];
+                if(i==5) return [1,0];
+                if(i==6) return [0,-1];
+                if(i==7) return [-1,0];
+            }
+            function drawXYrect(x, y, grosor, color) {
+                //console.log("fufo?")
+                if(color) 
+                  ctx.fillStyle = color; 
+                else 
+                  ctx.fillStyle = "#555555";
+                ctx.fillRect(x, y, grosor, grosor);
+            }
+            function rgb(r,g,b) {
+                var r_ = check(decToHex(r));
+                var g_ = check(decToHex(g));
+                var b_ = check(decToHex(b));
+                return "#"+r_+g_+b_;
+            }
+            function decToHex(n) {
+                if(n<0){
+                    n = 0xFFFFFFFF + n + 1;
+                }
+                return Math.round(n).toString(16).toUpperCase();
+            }
+            function check(n){
+                //console.log(n)
+                if(n.length>2){
+                    return "FF";
+                }else if (n.length<2){
+                    return "0"+n;
+
+                }else return n
+            }
+            canvas.addEventListener('mousemove',function onMouseover(e){
+                ratonx = e.clientX;
+                ratony = e.clientY;
+            });
+            window.addEventListener('DOMMouseScroll', mouseWheelEvent);
+            window.addEventListener("wheel", mouseWheelEvent);
+            function mouseWheelEvent(e){
+                console.log(e.wheelDelta ? e.wheelDelta : -e.detail);
+                var movement = (e.wheelDelta ? e.wheelDelta : -e.detail)/120;
+                if(movement<0){
+                    ScrollUp();
+                }else{
+                    ScrollDown();
+                }
+            }
+            function ScrollUp(){
+
+            }
+            function ScrollDown(){
+
+            }
+            Array.prototype.copy = function(){
+                let ret = [];
+                for (let i = 0; i < this.length; i++) {
+                    const element = this[i];
+                    if(typeof(element) == typeof([])){
+                        ret.push(element.copy());
+                    }else{
+                        ret.push(element);
+                    }
+                }
+                
+                
+                return ret
+            }
+            tick();
+        </script>
+    </body>
+</html>
+
+
+
+
