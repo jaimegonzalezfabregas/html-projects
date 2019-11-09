@@ -21,6 +21,8 @@
 	    var canvas = document.getElementById("canvas");
             var ctx = canvas.getContext("2d");
             var keys = [];
+            var ratony = 0;
+            var ratonx = 0;
             window.onkeyup = function(e) { keys[e.keyCode] = false; }
             window.onkeydown = function(e) { keys[e.keyCode] = true; }
             function drawXYrect(x, y, grosor, color) {
@@ -53,6 +55,30 @@
                     return "0"+n;
 
                 }else return n
+            }
+
+            canvas.addEventListener('mousemove',function onMouseover(e){
+                ratonx = e.clientX;
+                ratony = e.clientY;
+            });
+
+            window.addEventListener('DOMMouseScroll', mouseWheelEvent);
+            window.addEventListener("wheel", mouseWheelEvent);
+            function mouseWheelEvent(e){
+                console.log(e.wheelDelta ? e.wheelDelta : -e.detail);
+                var movement = (e.wheelDelta ? e.wheelDelta : -e.detail)/120;
+                if(movement<0){
+                    ScrollUp();
+                }else{
+                    ScrollDown();
+                }
+            }
+
+            function ScrollUp(){
+
+            }
+            function ScrollDown(){
+
             }
         </script>
     </body>
