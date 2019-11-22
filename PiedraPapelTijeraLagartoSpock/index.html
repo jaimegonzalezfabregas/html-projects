@@ -22,9 +22,10 @@
             let ctx = canvas.getContext("2d");
             let keys = [];
             let ratony = 0;
+            let sampling = 30;
             let ratonx = 0;
-            let resolutionratio = 20;
-            let unorganizedmap = [[10,20,"S",10],[20,10,"Pi",10],[10,10,"L",10],[20,20,"T",10]];
+            let resolutionratio = 14;
+            let unorganizedmap = [[10,20,"S",10],[20,10,"Pi",10],[10,10,"L",10],[40,40,"Pa",10],[10,40,"T",10]];
             let buffermap
             window.onkeyup = function(e) { keys[e.keyCode] = false; }
             window.onkeydown = function(e) { keys[e.keyCode] = true; }
@@ -45,14 +46,15 @@
                         let turns = 0;
                         while (got){
                             turns++
-                            if(turns>10){
+                            if(turns>20){
                                 unorganizedmap[i]=["Corrupted"]
                                 got = false
                                 break;
                             }
                             let relativeVS = TranslatePos(Math.floor(Math.random()*7.99));
                             psvs = getcellXY([cell[0]+relativeVS[0],cell[1]+relativeVS[1]]);
-                            if(psvs == "TryAgain"){
+                            if(psvs == "TryAgain"  &&psvs[1][2]!=cell[2]){ //
+                            
                             }else{   
                                 got = false;
                                 //console.log("outOfHere",got)
@@ -83,7 +85,7 @@
                     if(unorganizedmap.length<100000){
                         tick();
                     }
-                }, 7);
+                }, 1);
             }
             function fight(cell1,cell2){
                 //console.log(cell1,cell2)
@@ -95,39 +97,39 @@
                 if(winner == 0){
                     //retc1[3]++;
                     //retc2[3]++;
-                    if(retc2[3]>=10){
-                        retc2[3] = 10;
+                    if(retc2[3]>=sampling){
+                        retc2[3] = sampling;
                     };
-                    if(retc1[3]>=10){
-                        retc1[3] = 10;
+                    if(retc1[3]>=sampling){
+                        retc1[3] = sampling;
                     };
-                }
+                }else
                 if(winner == 2){
                     retc2[3]++
-                    if(retc2[3]>=10){
-                        retc2[3] = 10;
+                    if(retc2[3]>=sampling){
+                        retc2[3] = sampling;
                     };
                     retc1[3]--
                     if(retc1[3]<=0){
                         retc1[2]=retc2[2]
-                        retc1[3]=3;
+                        retc1[3]=sampling;
                     }
-                }
+                }else
                 if(winner == 1){
                     retc1[3]++
-                    if(retc1[3]>=10){
-                        retc1[3] = 10;
+                    if(retc1[3]>=sampling){
+                        retc1[3] = sampling;
                     };
                     retc2[3]--
                     if(retc2[3]<=0){
                         retc2[2]=retc1[2]
-                        retc2[3]=3;
+                        retc2[3]=sampling;
                     }
                 }
-                if(cell1[2]!="W"&&cell2[2]!="W"&&cell1[2]!=cell2[2]){
+                //if(cell1[2]!="W"&&cell2[2]!="W"&&cell1[2]!=cell2[2]){
                     //console.log(winner,cell1,cell2,retc1,retc2)
 
-                }
+                //}
                 return[retc1,retc2];
             }
             function Fwinner (c1,c2){
@@ -195,6 +197,11 @@
                 if(i==5) return [1,0];
                 if(i==6) return [0,-1];
                 if(i==7) return [-1,0];
+
+                //if(i==0) return [0,1];
+                //if(i==1) return [1,0];
+                //if(i==2) return [0,-1];
+                //if(i==3) return [-1,0];
             }
             function drawXYrect(x, y, grosor, color) {
                 //console.log("fufo?")
@@ -241,10 +248,10 @@
                 }
             }
             function ScrollUp(){
-
+                //UNUSED ;)
             }
             function ScrollDown(){
-
+                //UNSED ;)
             }
             Array.prototype.copy = function(){
                 let ret = [];
