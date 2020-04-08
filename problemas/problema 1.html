@@ -1,0 +1,67 @@
+<html>
+
+<body onclick="launch()">
+</body>
+<script>
+    var posibilities = [];
+
+    var numeros = 100;
+    var objetivo = 100;
+
+    function launch() {
+        newoperator(0, "");
+
+        var best = posibilities[0];
+        for (var i = 0; i < posibilities.length; i++) {
+            var element = posibilities[i];
+            if (element.length < best.length) {
+                best = element;
+            }
+        }
+        alert(best);
+
+    }
+
+    function newoperator(n, list) {
+        list += n.toString();
+
+        if (n > numeros - 1) {
+            if (Adds(list, objetivo)) {
+                posibilities.push(list);
+            }
+            return;
+        }
+        else {
+            //console.log("uno mas");
+            //console.log(n + " - Voy por:" + list);
+            n = n + 1;
+            newoperator(n, list + "+");
+            newoperator(n, list + "-");
+            newoperator(n, list);
+        }
+    }
+
+    function pushIt(array, cosa) {
+        var ret = [];
+
+        array.forEach(function (element) {
+            ret.push(element)
+        }, this);
+
+        ret.push(cosa);
+        return ret;
+    }
+
+    function Adds(factors, n) {
+        var ret = eval(factors);
+
+        if (ret == n) {
+            console.log(factors + " = " + n);
+            return true;
+        }
+        return false;
+    }
+
+</script>
+
+</html>

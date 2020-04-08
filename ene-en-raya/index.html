@@ -1,0 +1,74 @@
+<html>
+
+<head>
+    <title>Tres en ralla</title>
+    <link rel="stylesheet" type="text/css" href="elcss.css">
+</head>
+
+<body onload="createtable()">
+    <ul>
+        <li>el primer click activará la casilla</li>
+        <li>un click para cambiar la casilla entre azul y rojo</li>
+        <li>doble click para desaccivar la casilla</li>
+
+    </ul>
+    
+    
+
+
+    <script>
+        var color = "blue"
+        function createtable(){
+            var columnas =prompt ("cuantas columnas","3");
+            var filas =prompt ("cuantas filas","3");
+
+            crearTablaDeVerdad(columnas,filas);
+        }
+
+        function crearTablaDeVerdad(columnas,filas){
+
+            var table =document.createElement('table');
+            table.border = "3";
+            table.cellPadding
+
+            var hazmeUnTD = function(){
+                    var td = document.createElement('td');
+                    td.innerHTML = "";
+                    td.addEventListener("click", function(){editar(td)});
+                    td.addEventListener("dblclick" , function(){aBlanco(td)});
+                    return td;
+            }
+
+            for (var i = 0; i < filas; i++) {
+                console.log("Estoy en la fila:" + i);
+                var tr =document.createElement('tr');
+
+                for (var j = 0; j < columnas; j++) {
+                    var td = hazmeUnTD();
+                    tr.appendChild(td);
+                }
+                table.appendChild(tr);    
+            }
+            document.body.appendChild(table);
+
+        }
+             
+        function editar(casilla) {
+            if (casilla.style.backgroundColor == "blue") {
+                color = "red";
+                casilla.style.backgroundColor = "red";
+
+            }else{
+                color = "blue";
+                casilla.style.backgroundColor = "blue";
+
+            }
+        }
+        function aBlanco(casilla){
+            casilla.style.backgroundColor = "white";
+        }
+    </script>
+
+</body>
+
+</html>

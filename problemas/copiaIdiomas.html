@@ -1,0 +1,103 @@
+<html>
+
+<body>
+    Copy-Paste a long text wrtiten in the lenguage you want to imitate( you can teach him more than one text)<br>
+    <input id="Learn data" type="text" width="20000%" height="100%"></input><br>
+    <button onclick="learn()">learn</button><br>
+    then, input the number of leters you want your text to have and press GO<br>
+    <input id="Leters" type="text"></input><br>
+    <button onclick="generate()">GO</button><br>
+
+    <body>
+
+        <script>
+            var todasLasLetras = []
+            var histograma = [];
+            var nakedText;
+            var product
+
+            function learn() {
+                nakedText = document.getElementById("Learn data").value;
+                var letraNueva = true;
+                for (var i = 0; i < nakedText.length; i++) {
+                    var letraAct = String.fromCharCode(nakedText.charCodeAt(i))
+                    for (var j = 0; j < todasLasLetras.length; j++) {
+                        var element = todasLasLetras[j];
+                        if (element[0] == letraAct) {
+                            letraNueva = false;
+                        }
+                    }
+                    if (letraNueva) {
+                        todasLasLetras.push([letraAct])
+                        console.log("añadiendo letra: " + letraAct);
+                    }
+                }
+                console.log(todasLasLetras)
+                for (var i = 0; i < todasLasLetras.length; i++) {
+                    var firstLetter = todasLasLetras[i];
+
+                    for (var j = 0; j < todasLasLetras.length; j++) {
+                        var secondLetter = todasLasLetras[j];
+                        var convinacionNueva = true;
+
+                        for (var j = 0; j < histograma.length; j++) {
+                            var element = histograma[j];
+                            if (element[0] == firstLetter + secondLetter) {
+                                convinacionNueva = false;
+                            }
+                        }
+                        if (letraNueva) {
+                            histograma.push([firstLetter + secondLetter, 0]);
+
+                        }
+                    }
+                }
+
+                for (var i = 0; i < nakedText.length; i++) {
+                    var letra1 = String.fromCharCode(nakedText.charCodeAt(i))
+                    var letra2 = String.fromCharCode(nakedText.charCodeAt(i + 1))
+                    for (var j = 0; j < histograma.length; j++) {
+                        var element = histograma[j];
+                        if (element[0] == letra1 + letra2) {
+                            element[1] = element[1] + 1;
+                        }
+                    }
+                }
+
+                console.log(histograma);
+
+                document.getElementById("Learn data").value = "";
+            }
+
+            function generate() {
+                var resultado
+                resultado = resultado + histograma[(Math.random() * histograma.length)][0];
+                for (var i = 0; i < document.getElementById("Leters").value - 1; i++) {
+                    var posibilidades = [];
+                    var a;
+                    for (var k = 0; k < histograma.length; k++) {
+                        var element = array[k];
+                        if (String.fromCharCode(element[0].charCodeAt(1) == String.fromCharCode(resultado.charCodeAt(k)))) {
+                            if (element[1] != 0) {
+                                posibilidades.push(element);
+                                a = a + element[1];
+                            }
+                        }
+                    }
+                    numeroLetra = Math.floor(Math.random * a)
+                    var c;
+                    var laQueEs;
+                    for (var g = 0; g < posibilidades.length; g++) {
+                        c = c + posibilidades[g][1];
+                        if (numeroLetra < c) {
+                            resultado = resultado + posibilidades[g][0];
+                            break;
+                        }
+                    }
+                    resultado = resultado + histograma[(Math.random() * histograma.length)][0];
+                }
+            }
+        </script>
+    </body>
+
+</html>
