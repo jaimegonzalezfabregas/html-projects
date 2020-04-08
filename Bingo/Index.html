@@ -1,0 +1,111 @@
+<html>
+
+<head>
+    <style>
+        #Bingo {
+            font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+            height: 100%;
+        }
+
+        #Bingo td,
+        #customers th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+
+        #Bingo th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-justify: distribute;
+            text-align: justify;
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+
+        function shuffle(array) {
+            var tmp, current, top = array.length;
+            if (top) while (--top) {
+                current = Math.floor(Math.random() * (top + 1));
+                tmp = array[current];
+                array[current] = array[top];
+                array[top] = tmp;
+            }
+            return array;
+        }
+
+        function crearTablaDeVerdad(columnas, filas, data) {
+            n=0
+            var table = document.createElement('table');
+            table.id = "Bingo"
+
+            var hazmeUnTD = function () {
+                var td = document.createElement('td');
+                td.innerHTML = data[n];
+                n++
+                td.addEventListener("click", function () { editar(td) });
+                td.addEventListener("dblclick", function () { aBlanco(td) });
+                return td;
+            }
+
+            for (var i = 0; i < filas; i++) {
+                console.log("Estoy en la fila:" + i);
+                var tr = document.createElement('tr');
+
+                for (var j = 0; j < columnas; j++) {
+                    var td = hazmeUnTD();
+                    tr.appendChild(td);
+                }
+                table.appendChild(tr);
+            }
+            document.body.appendChild(table);
+
+        }
+
+        function editar(casilla) {
+
+            casilla.style.backgroundColor = "red";
+
+            
+        }
+        function aBlanco(casilla) {
+            casilla.style.backgroundColor = "white";
+        }
+
+
+
+        let WH = window.prompt("Width and Height", "5,4").split(",")
+        let W = WH[0]
+        let H = WH[1]
+        console.log("W:" + W, "H:" + H)
+        var dataAll = ["Each and Everything","Network","Infection","Senior Tecnician","Lisen","Benchod (Indian Insult)", "Don't cry", "Scamer", "User", "Cheese Burguer", "Lifetime", "Virus", "Connection", "Warnings", "FireWall", "Service", "Card", "Transfer", "One time payment", "Error", "Mistake", "bank account", "secure server", "Username and Password", "behind the bars", "Windows Key", "R as in Robert"]
+
+        var data = shuffle(dataAll).slice(0, W * H)
+
+
+        crearTablaDeVerdad(W,H,data)
+        /*html = "<table id=\"Bingo\" ><tr>";
+
+        for (var i = 0; i < data.length; i++) {
+            html += "<td>" + data[i] + "</td>";
+            // Break into next row
+            var next = i + 1;
+            if (next % W == 0 && next != data.length) {
+                html += "</tr><tr>";
+            }
+        }
+        html += "</tr></table>";
+        document.getElementById("container").innerHTML = html;
+        */
+
+    </script>
+</body>
+
+</html>

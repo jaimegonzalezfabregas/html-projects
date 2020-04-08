@@ -1,0 +1,196 @@
+<html>
+
+<body onload="load()">
+    <t style="font-size:300%">N Queens</t>
+    <div id="ConfigurationPanel">
+        <table border="2px">
+            <tr>
+                <th>
+                    <especificador>border lenth</especificador>
+                </th>
+                <th>
+                    <input id="lado" type="text" value="4"></input>
+                </th>
+            </tr>
+            <tr>
+                <th>
+                    <especificador>queen number</especificador>
+                </th>
+                <th>
+                    <input id="queenNumber" type="text" value="4"></input>
+                </th>
+            </tr>
+        </table>
+        <br>
+
+        <button onclick="Start()">Start simulation</button>
+    </div>
+    <div id="DisplayPanel">
+        <canvas style="border:1px solid #000000;" id="Display" width="200" height="200" border=></canvas><br><br>
+        <input id="Velocity"></input>
+        <t> steps/second
+            <t>
+                <button onclick="RefreshVelocity()">Refresh Velocity</button>
+
+    </div>
+</body>
+
+<script>
+    var tiempoEntreCadaPaso = 3000;
+    var lado;
+    var queenNumber;
+    var posibles = [];
+    var number = 0;
+    function RefreshVelocity() {
+        if (document.getElementById("Velocity").value != "") {
+            tiempoEntreCadaPaso = document.getElementById("Velocity").value * 1000;
+        }
+    }
+    function load() {
+        document.getElementById("ConfigurationPanel").style.display = 'block';
+        document.getElementById("DisplayPanel").style.display = 'none';
+    }
+
+    function Start() {
+        document.getElementById("ConfigurationPanel").style.display = 'none';
+        document.getElementById("DisplayPanel").style.display = 'block';
+        lado = document.getElementById("lado").value;
+        queenNumber = document.getElementById("queenNumber").value;
+        unaPiezaMas([]);
+        console.log(posibles);
+        console.log(posibles[number]);
+        console.log(number);
+        console.log("llamar a draw");
+
+        draw(document.getElementById("Display"), posibles[number]);
+    }
+
+    function draw(c, tablero) {
+        var ctx = c.getContext("2d");
+
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, 200, 200);
+        console.log(tablero);
+        var largoDecelda = 200 / lado;
+
+        for (var i = 0; i < tablero.length; i++) {
+            act = tablero[i];
+            ctx.fillStyle = "black";
+            ctx.fillRect(largoDecelda * (act[0]), largoDecelda * (act[1]), largoDecelda, largoDecelda);
+            ctx.fillStyle = "yellow";
+            ctx.fillText("" + i, largoDecelda * (act[0]) + largoDecelda / 2, largoDecelda * (act[1]) + largoDecelda / 2);
+        }
+
+        number++;
+        if (number >= posibles.length) {
+            number = 0;
+        }
+        setTimeout(function () {
+            draw(document.getElementById("Display"), posibles[number]);
+        }, tiempoEntreCadaPaso);
+    }
+
+
+
+
+    function unaPiezaMas(TableroOriginal) {
+        for (var y = 0; y < lado; y++) {
+
+            var Tablero = TableroOriginal.slice(0);
+            Tablero.push([TableroOriginal.length, y]);
+            //traza(x + "," + y + "--" + Tablero + "-" + Tablero.length);
+
+            if (Tablero.length >= queenNumber) {
+                if (esPosible(Tablero)) {
+                    posibles.push(Tablero);
+                }
+            } else {
+                unaPiezaMas(Tablero);
+            }
+        }
+    }
+
+    function compara(uno, dos) {
+        for (var u = 0; u < uno.length; u++) {
+            var euno = uno[u];
+            for (var d = 0; d < dos.length; d++) {
+                var edos = dos[d];
+                if (euno != edos) {
+                    return false
+                }
+            }
+        }
+        return true
+    }
+
+
+    function Simetricos(uno, dos) {
+        var retSinProcesar = 0;
+
+        for (var i = 0; i < uno.length; i++) {
+            var elementUno = uno[i];
+            for (var j = 0; j < dos.length; j++) {
+                var elementDos = dos[j];
+                if (!compara(elementDos, elementUno)) {
+                    return false
+                }
+            }
+        }
+        return true;
+
+    }
+
+
+    function esPosible(Tablero) {
+
+        for (var k = 0; k < posibles.length; k++) {
+            var element = posibles[k];
+            if (Simetricos(Tablero, element)) {
+                return false;
+            }
+        }
+
+        for (var i = 0; i < Tablero.length; i++) {
+            var first = Tablero[i];
+            for (var j = 0; j < Tablero.length; j++) {
+
+                if (i == j) {
+                    traza("no los comparo:" + i + " y " + j);
+                } else {
+                    var second = Tablero[j];
+                    if (seComen(first[0], first[1], second[0], second[1])) {
+                        traza("si se comen:" + first + " y " + second);
+                        return false;
+                    } else {
+                        traza("no se comen:" + first[0] + " " + first[1] + " y " + second[0] + " " + second[1]);
+                    }
+                }
+            }
+        }
+
+        traza("este tablero es posible: " + Tablero)
+        return true;
+    }
+
+    function seComen(x1, y1, x2, y2) {
+        if (x1 == x2 || y1 == y2) {
+            return true;
+        }
+        for (var index = -lado; index < lado; index++) {
+            if (x1 - index == x2 && y1 - index == y2) {
+                return true;
+            }
+            if (x1 + index == x2 && y1 - index == y2) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function traza(t) {
+        //console.log(t);
+    }
+
+</script>
+
+</html>

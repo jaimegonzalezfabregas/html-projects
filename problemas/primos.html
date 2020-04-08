@@ -1,0 +1,73 @@
+<html>
+
+<body onclick="main()">
+    press to start
+</body>
+
+<script>
+    var EveryPrime = [];
+    var Minimo = 11;
+    var tururu = 1;
+    function main() {
+        EveryPrime.push(2);
+        NextPrime();
+
+    }
+
+    function NextPrime() {
+        try {
+            var trying = EveryPrime[EveryPrime.length - 1] + 1;
+            while (!isPrime(trying)) {
+                trying++;
+            }
+            EveryPrime.push(trying);
+            if (trying > Minimo) {
+                if (esCapicua(trying)) {
+                    if(tururu.toString().split("")[tururu.toString().split("").length-1]=="1"){
+                        simbolito = "ᵉʳ"
+                    }else {
+                        simbolito = "º"
+                    }
+
+                    alert("el " + tururu + simbolito +" número mas pequeño que es primo capicúa mayor que " + Minimo + " es: " + trying);
+                    tururu++;
+                }
+            }
+            setTimeout(NextPrimes(), 1);
+        } catch (error) {
+            setTimeout(NextPrimes(), 1);
+        }
+
+    }
+
+    function NextPrimes() {
+        for (var i = 0; i < 200; i++) {
+            NextPrime();
+        }
+    }
+
+    function isPrime(n) {
+        var ret = true;
+        for (var index = 0; index < EveryPrime.length || n / element > element; index++) {
+            var element = EveryPrime[index];
+            if (n % element == 0) {
+                ret = false;
+            }
+        }
+        return ret;
+    }
+
+    function esCapicua(n) {
+        var numero = n.toString().split("");
+        var ret = true;
+        for (var i = 0; i < numero.length; i++) {
+            if (numero[i] != numero[numero.length - 1 - i]) {
+                ret = false;
+            }
+        }
+        return ret;
+    }
+
+</script>
+
+</html>
