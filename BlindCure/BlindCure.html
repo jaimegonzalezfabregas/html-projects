@@ -1,0 +1,266 @@
+<html>
+    <head>
+    </head>
+    <body>  
+        <video id="video" width="640" height="480" autoplay onclick="UserAction()"></video>
+        <canvas id="canvas" width="640" height="480"></canvas>
+        <canvas id="Spectrogram" width="640" height="100"></canvas>
+        <input type="range" min="0" max="100" value="50" class="slider" id="Volume">
+
+
+        <script>
+
+            if(true){ //#EsteCachoDeCodigoMeEstresa
+                var video = document.getElementById('video');
+                if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+                        //video.src = window.URL.createObjectURL(stream);
+                        video.srcObject = stream;
+                        video.play();
+                    });
+                }else if(navigator.getUserMedia) { // Standard
+                    navigator.getUserMedia({ video: true }, function(stream) {
+                        video.src = stream;
+                        video.play();
+                    }, errBack);
+                } else if(navigator.webkitGetUserMedia) { // WebKit-prefixed
+                    navigator.webkitGetUserMedia({ video: true }, function(stream){
+                        video.src = window.webkitURL.createObjectURL(stream);
+                        video.play();
+                    }, errBack);
+                } else if(navigator.mozGetUserMedia) { // Mozilla-prefixed
+                    navigator.mozGetUserMedia({ video: true }, function(stream){
+                        video.srcObject = stream;
+                        video.play();
+                    }, errBack);
+                }
+            }
+
+
+            var VolumeSlide = document.getElementById("Volume");
+
+            var TimeBetweenRefresh = 10
+
+            var canvas = document.getElementById('canvas');
+            var Spectrogram = document.getElementById('Spectrogram');
+            var context = canvas.getContext('2d');
+            var Spectrogramcontext = Spectrogram.getContext('2d');
+
+            var video = document.getElementById('video');
+            var baseFreq = 300
+            var TopFreq = 2000
+            var FreqsNum = 500
+            var SoundData = []
+            var AudContext 
+            var VolumenArr = []
+            var NormalizerArr = []
+            var AviableFreqs = []
+            var volume = 0
+            var ScanFrequency = 100 //cuantos ms hay en cada barrido
+            var Multiplexer = 0
+
+            
+            VolumeSlide.oninput = function() {
+                volume = this.value/100;
+            }
+
+            function RefreshCpectroVisualitation() {
+                //console.log(VolumenArr)
+                w = Spectrogram.clientWidth 
+                h = Spectrogram.clientHeight
+                step = w/VolumenArr.length  
+                for (let x = 0; x < VolumenArr.length; x++) {
+                    const element = VolumenArr[x]/NormalizerArr[x]*10;
+                    Spectrogramcontext.fillStyle = rgb(element,element,element)
+                    Spectrogramcontext.fillRect(x*step,0,step,h)
+                }
+            }
+
+            function PopulateAviableFreqs() {
+                AviableFreqs = []
+                BuffAviableFreqs = []
+                WipFreq = baseFreq
+                while(WipFreq < TopFreq){
+                    WipFreq++
+                    primo = true
+                    for (let i = 0; i < BuffAviableFreqs.length; i++) {
+                        if(WipFreq%BuffAviableFreqs[i]==0){
+                            primo = false
+                        }
+                    }
+                    if (primo) {
+                        BuffAviableFreqs.push(WipFreq)
+                    }
+                }
+                for (let j = 0; j < BuffAviableFreqs.length; j++) {
+                    const element = BuffAviableFreqs[j];
+                    if(Math.floor(j%(BuffAviableFreqs.length/FreqsNum))==0){
+                        AviableFreqs.push(element)
+                    }
+                    
+                }
+                //console.log(AviableFreqs)
+            }
+
+            function prepareNodes() {
+                SoundData = []
+                for (let i = 0; i < AviableFreqs.length; i++) {
+                    
+                    var gain = AudContext.createGain();
+                    var osc = AudContext.createOscillator();
+
+                    gain.connect(AudContext.destination);
+                    
+                    osc.frequency.value = AviableFreqs[i]
+                    //console.log(AviableFreqs[i])
+                    osc.connect(gain);
+                    osc.start(0);
+
+                    
+                    SoundData.push([osc,gain])
+                    VolumenArr.push(0)
+                    NormalizerArr.push(0)
+                }
+
+            }
+
+            function updateNodes() {
+                //console.log(VolumenArr)
+                for (let i = 0; i < SoundData.length; i++) {
+                    //console.log(VolumenArr[i]+0.00001,AudContext.currentTime + TimeBetweenRefresh/1000)
+                    if(NormalizerArr[i]>0){
+                        //console.log(VolumenArr[i])
+                        SoundData[i][1].gain.exponentialRampToValueAtTime((((VolumenArr[i]/NormalizerArr[i])*volume)+0.00001)/10, AudContext.currentTime + 0.01)
+                        VolumenArr[i] = 0
+                        NormalizerArr[i] = 0
+                    }else{
+                        SoundData[i][1].gain.exponentialRampToValueAtTime(0.0001, AudContext.currentTime + 0.01)
+                    }
+                }
+            }
+
+            function TakePhoto(){
+
+                Multiplexer = Multiplexer + (ScanFrequency/TimeBetweenRefresh)**-1
+                Multiplexer = Multiplexer % 1
+
+
+                context.drawImage(video, 0, 0, canvas.clientWidth, canvas.clientHeight);// Get the CanvasPixelArray from the given coordinates and dimensions.
+                
+                var Posimgd = context.getImageData(0, 0, canvas.clientWidth, canvas.clientHeight);
+                var Pospix = Posimgd.data;
+                
+                var NewMiddle = 0
+                var NewZoomMin = 255
+                var NewZoomMax = 0
+                
+
+                // Loop over each pixel and invert the color.
+                for (var i = 0, n = Pospix.length; i < n; i += 4) {
+                               
+                    //if(i%1000==0)console.log(canvas.clientWidth* canvas.clientHeight,n/4,i,imageX,imageY)
+
+                    col = (Pospix[i]+Pospix[i+1]+Pospix[i+2])/3  
+                    //Math.floor((i/n)*VolumenArr.length)
+                    UnitCordinates = DataArrayToSpectogramArray(i/4,n,canvas.clientWidth, canvas.clientHeight,Multiplexer)
+                    //console.log(UnitCordinates)
+                    if(UnitCordinates!="OutSideRange"){
+                        VolumenArr[Math.floor(UnitCordinates*VolumenArr.length)] += (col/255)*10
+                        NormalizerArr[Math.floor(UnitCordinates*VolumenArr.length)] +=1
+                        col = UnitCordinates*255
+                        
+                    }
+
+                    Pospix[i  ] = col
+                    Pospix[i+1] = col
+                    Pospix[i+2] = col
+
+                    // i+3 is alpha (the fourth element)
+                }
+
+
+                //console.log(middle,zoom)
+                RefreshCpectroVisualitation()
+
+                updateNodes()
+
+                // Draw the ImageData at the given (x,y) coordinates.
+                context.putImageData(Posimgd, 0, 0);
+                setTimeout(() => {
+                    TakePhoto()
+                    //console.log(SoundData)
+                }, TimeBetweenRefresh);
+                
+            }
+
+            var loaded = true
+
+            function UserAction() {
+                if(loaded == true){
+                    console.log("onClicked")
+                    loaded = false
+                    AudContext = new(window.AudioContext || window.webkitAudioContext)();
+                    PopulateAviableFreqs()
+                    prepareNodes()
+                    TakePhoto()
+                }
+
+            }
+
+            function DataArrayToSpectogramArray(i,DataLength,w,h,multiplexer) {
+                SquDX = i%w
+                SquDY = Math.floor(i/w)
+
+                polDCenX = w/2
+                polDCenY = h/2
+
+                r = Math.min(polDCenX,polDCenY)
+
+                PolarDataR = Math.sqrt(Math.pow(SquDY-polDCenY,2)+Math.pow(SquDX-polDCenX,2))
+
+                if(MarginEquals(multiplexer, PolarDataR/r, 0.04)){
+                    //console.log((((PolarDataAngle/(Math.PI*2))+1)%1))
+                    PolarDataAngle = Math.atan2(SquDY-polDCenY,SquDX-polDCenX)
+                    return (((PolarDataAngle/(Math.PI*2))+1)%1)
+                }else{
+                    return "OutSideRange"
+                }
+
+            }
+
+            function rgb(r,g,b) {
+                var r_ = check(decToHex(r));
+                var g_ = check(decToHex(g));
+                var b_ = check(decToHex(b));
+                return "#"+r_+g_+b_;
+            }
+
+            function decToHex(n) {
+                if(n<0){
+                    n = 0xFFFFFFFF + n + 1;
+                }
+                return Math.round(n).toString(16).toUpperCase();
+            }
+
+            function check(n){
+                //console.log(n)
+                if(n.length>2){
+                    return "FF";
+                }else if (n.length<2){
+                    return "0"+n;
+
+                }else return n
+            }
+
+
+            function MarginEquals(a,b,m){
+                return Math.abs(a-b)<m
+            }
+            
+        </script>
+    </body>
+</html>
+
+
+
+
