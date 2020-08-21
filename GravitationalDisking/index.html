@@ -1,0 +1,228 @@
+<html>
+    <head>
+        <style>
+            canvas {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            body{
+                width: 100%;
+                height: 100%;
+                margin: 0px;
+                padding: 0px;
+            }
+        </style>
+    </head>
+    <body>  
+        <canvas id="canvas" width="1920" height="1080"></canvas>
+        <script>
+	    var canvas = document.getElementById("canvas");
+            var ctx = canvas.getContext("2d");
+            var keys = [];
+            var ratony = 0;
+            var ratonx = 0;
+            window.onkeyup = function(e) { keys[e.keyCode] = false; }
+            window.onkeydown = function(e) { keys[e.keyCode] = true; }
+
+            // [x,y,x,vx,vy,vz,m]
+            var dataL = 100
+            var data = []
+
+            function initiation() {
+                for (let i = 0; i < dataL; i++) {
+                    x = Math.random()
+                    y = Math.random()
+                    z = Math.random()
+                    vx = Math.random()
+                    vy = Math.random()
+                    vz = Math.random()
+                    let wip = [x,y,z,vx,vy,vz,0]
+                    data.push(wip)              
+                }
+            }
+
+            function AcelerationOn(i,dataArg) {
+                ax = 0
+                ay = 0
+                az = 0
+                for (let j = 0; j < dataArg.length; j++) {
+                    wipF = Finfluence(i,j)
+                    ax = wipF[0]/data[i][6]
+                    ax = wipF[1]/data[i][6]
+                    ax = wipF[2]/data[i][6]
+                    
+                }
+                return[ax,ay,az]
+            }
+
+            function Finfluence(i,j) {
+                D = IndexDistance(i,j)
+
+                if(D<0.001){
+                    return [0,0,0]
+                }
+
+                F = (data[i][6]*data[j][6])/(D**2)
+                
+                V = [data[j][0]-data[i][0],data[j][1]-data[i][1],data[j][2]-data[i][2]]
+
+                return [F*V[0]/D,F*V[2]/D,F*V[2]/D,]
+            }
+
+            function IndexDistance(i,j) {
+                return Distance[data[i][0],data[i][1],data[i][2],data[j][0],data[j][1],data[j][2]]
+            }
+
+            function Distance(x1,y1,z1,x2,y2,z2){
+                return ( (x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2 )**0.5
+            }
+
+            function popify(j,data) {
+                ret = []
+                for (let i = 0; i < array.length; i++) {
+                    const element = array[i];
+                    if(i!=j){
+                        ret.push(element)
+                    }
+                }  
+                return ret 
+            }
+
+            function colision(i,j) {
+                NewM = data[i][6]+data[j][6]
+                NewX = (data[i][0]+data[j][0])/2
+                NewY = (data[i][1]+data[j][1])/2
+                NewZ = (data[i][2]+data[j][2])/2
+                NewVx = (data[i][3]*data[i][6]+data[j][3]*data[j][6])/NewM
+                NewVy = (data[i][4]*data[i][6]+data[j][4]*data[j][6])/NewM
+                NewVz = (data[i][5]*data[i][6]+data[j][5]*data[j][6])/NewM
+
+                newObj = [NewX,NewY,NewZ,NewVx,NewVy,NewYz,NewM]
+
+                data = popify(i,data)
+                data = popify(j,data)
+                data.push(newObj)
+            }
+
+            function tick() {
+                
+                //draw screen
+
+                
+
+                //simulate steps
+                data = shufle(data,3)
+                for (let i = 0; i < data.length; i++) {
+                    A = AcelerationOn(i,data)
+                    data[i][3] += A[0]
+                    data[i][4] += A[1]
+                    data[i][5] += A[2]
+
+                    data[i][0] += data[i][3]
+                    data[i][1] += data[i][4]
+                    data[i][2] += data[i][5]
+                }
+
+                //simulate colisions
+                for (let i = 0; i < data.length; i++) {
+                    for (let j = 0; j < data.length; j++) {
+                        if(i!=j && IndexDistance(i,j) < Data[i][6]+Data[j][6]){
+                            colision(i,j)
+                        }
+                    }
+                }
+
+                setTimeout(() => {
+                    tick()
+                }, 10);
+            }
+
+
+            function drawXYcircle(x,y,r,c) {
+                if(c) 
+                  ctx.fillStyle = c; 
+                else 
+                  ctx.fillStyle = "#555555";
+                
+                ctx.beginPath();
+                ctx.arc(posx, posy, 50, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            function drawXYrect(x, y, grosor, color) {
+                //console.log("fufo?")
+                if(color) 
+                  ctx.fillStyle = color; 
+                else 
+                  ctx.fillStyle = "#555555";
+                ctx.fillRect(x, y, grosor, grosor);
+            }
+            function rgb(r,g,b) {
+                var r_ = check(decToHex(r));
+                var g_ = check(decToHex(g));
+                var b_ = check(decToHex(b));
+                return "#"+r_+g_+b_;
+            }
+
+            function decToHex(n) {
+                if(n<0){
+                    n = 0xFFFFFFFF + n + 1;
+                }
+                return Math.round(n).toString(16).toUpperCase();
+            }
+
+            function check(n){
+                //console.log(n)
+                if(n.length>2){
+                    return "FF";
+                }else if (n.length<2){
+                    return "0"+n;
+
+                }else return n
+            }
+
+            canvas.addEventListener('mousemove',function onMouseover(e){
+                ratonx = e.clientX;
+                ratony = e.clientY;
+            });
+
+            window.addEventListener('DOMMouseScroll', mouseWheelEvent);
+            window.addEventListener("wheel", mouseWheelEvent);
+            function mouseWheelEvent(e){
+                console.log(e.wheelDelta ? e.wheelDelta : -e.detail);
+                var movement = (e.wheelDelta ? e.wheelDelta : -e.detail)/120;
+                if(movement<0){
+                    ScrollUp();
+                }else{
+                    ScrollDown();
+                }
+            }
+
+            function ScrollUp(){
+
+            }
+            function ScrollDown(){
+
+            }
+
+            function shufle(arr,d) {
+                for (let i = 0; i < arr.length; i++) {
+                    if(Math.random()>0.5){
+                        buff = arr[i]
+                        arr[i]=arr[i-1]
+                        arr[i-1] = buff
+                    }
+                }
+                if(d>0){
+                    return shufle(arr,d-1)
+                }
+                return arr
+            }
+        </script>
+    </body>
+</html>
+
+
+
+
