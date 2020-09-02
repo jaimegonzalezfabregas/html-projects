@@ -1,0 +1,352 @@
+<html>
+    <head>
+        <style>
+            canvas {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            body{
+                width: 100%;
+                height: 100%;
+                margin: 0px;
+                padding: 0px;
+            }
+        </style>
+    </head>
+    <body>  
+        <canvas id="canvas" width="1920" height="1080"></canvas>
+        <script>
+	        
+            var canvas = document.getElementById("canvas");
+            var ctx = canvas.getContext("2d");
+            var keys = [];
+            var ratony = 0;
+            var ratonx = 0;
+            window.onkeyup = function(e) { keys[e.keyCode] = false; }
+            window.onkeydown = function(e) { keys[e.keyCode] = true; }
+            var tablero = []
+            var h = 13
+            var w = 7
+            var fallTimeOut = 0
+            var Fx = 0
+            var Fy = 0
+            var Findex = -1
+            var Frot = 0
+            var turningCoolDown = 0
+            var movingCoolDown = 0
+            var fichas = [
+                [
+                   [[1,1],
+                    [1,1]]
+                ],
+                [
+                   [[1,1,1,1]],
+                    
+                   [[1],
+                    [1],
+                    [1],
+                    [1]]
+                ],
+                [
+                   [[1,1,0],
+                    [0,1,1]],
+
+                   [[0,1],
+                    [1,1],
+                    [1,0]],
+                ],
+                [
+                   [[0,1,1],
+                    [1,1,0]],
+
+                   [[1,0],
+                    [1,1],
+                    [0,1]],
+                
+                ],
+                [
+                   [[0,1,0],
+                    [1,1,1]],
+
+                   [[1,0],
+                    [1,1],
+                    [1,0]],
+                    
+                   [[1,1,1],
+                    [0,1,0]],
+
+                   [[0,1],
+                    [1,1],
+                    [0,1]],
+                
+                ],
+                [
+                   [[1,0,0],
+                    [1,1,1]],
+
+                   [[1,1],
+                    [1,0],
+                    [1,0]],
+                    
+                   [[1,1,1],
+                    [0,0,1]],
+
+                   [[0,1],
+                    [0,1],
+                    [1,1]],
+                
+                ],
+                [
+                   [[0,0,1],
+                    [1,1,1]],
+
+                   [[1,0],
+                    [1,0],
+                    [1,1]],
+                    
+                   [[1,1,1],
+                    [1,0,0]],
+
+                   [[1,1],
+                    [0,1],
+                    [0,1]], 
+                
+                ],
+                
+            ]
+
+            
+
+            function init() {
+                for (let y = 0; y < h; y++) {
+                    let fila = []
+                    for (let x = 0; x < w; x++) {
+                        fila.push(0)         
+                    }
+                    tablero.push(fila)
+                }
+
+                //console.log(DeepCopy(tablero))
+
+                tick()
+            }
+
+            function tick() {
+
+                turningCoolDown = turningCoolDown - 1
+                movingCoolDown = movingCoolDown - 1
+
+                if(fallTimeOut>50){
+                    fallTimeOut = 0
+                    Fy++
+                    let nextScreen = getScreen(tablero,Findex,Frot,Fx,Fy+1)
+                    if(nextScreen == "hit"){
+                        tablero = getScreen(tablero,Findex,Frot,Fx,Fy)
+                        Findex = -1
+                    }
+                }else{
+                    fallTimeOut++
+                }
+
+                if(keys[75] && turningCoolDown < 0){ //k
+                    turningCoolDown = 10
+                    let oldFrot = Frot
+                    Frot = Frot+1
+                    if(Frot > fichas[Findex].length-1){
+                        Frot = 0
+                    }
+                    let nextScreen = getScreen(tablero,Findex,Frot,Fx,Fy)
+                    //console.log(fichas[Findex].length)
+                    if(nextScreen == "hit" || nextScreen == "Wall"){
+                        Frot = oldFrot
+                    }
+                } 
+
+                if(keys[76] && movingCoolDown < 0){
+                    movingCoolDown = 10
+                    let NewScreen = getScreen(tablero,Findex,Frot,Fx+1,Fy)
+                    if(NewScreen != "Wall" && NewScreen != "hit"){
+                        Fx = Fx+1
+                    }
+                }//l
+
+                if(keys[74] && movingCoolDown < 0){
+                    movingCoolDown = 10
+                    let NewScreen = getScreen(tablero,Findex,Frot,Fx-1,Fy)
+                    if(NewScreen != "Wall" && NewScreen != "hit"){
+                        Fx = Fx-1
+                    }
+                } //j
+
+                if(Findex == -1){
+
+                    for (let y = 0; y < tablero.length; y++) {
+                        const fila = tablero[y];
+                        let total = 0
+                        for (let x = 0; x < fila.length; x++) {
+                            total += fila[x]
+                        }
+                        if(total >= fila.length){
+                            console.log("yay, has hecho una fila")
+                            tablero = removeY(y,tablero)
+                            console.log(tablero)
+                            y = y-1
+                        }
+                    }
+
+
+                    Frot = 0
+                    Findex = Math.round(Math.random()*(fichas.length-1))
+                    Fx = Math.round(w/2-fichas[Findex][0].length/2 -1)
+                    Fy = 0
+
+                    let nextScreen = getScreen(tablero,Findex,Frot,Fx,Fy)
+                    if(nextScreen == "hit"){
+                        alert("ya veré que hago aqui")
+                    }
+
+                }
+                
+                //draw screen
+                //console.log(DeepCopy(fichas))
+                //console.log(getScreen(tablero,Findex,Frot,Fx,Fy))
+
+                let pantalla = getScreen(tablero,Findex,Frot,Fx,Fy)
+
+                let zoom = 30
+
+                drawXYrect(0,0,10000,rgb(255,255,255))
+                
+
+                for (let y = 0; y < pantalla.length; y++) {
+                    for (let x = 0; x < pantalla[y].length; x++) {
+                        const pixel = pantalla[y][x];
+                        if(pixel == 1){
+                            drawXYrect(zoom*x,zoom*y,zoom,rgb(0,0,0))
+                        }else{
+                            drawXYrect(zoom*x,zoom*y,zoom,rgb(200,200,200))
+                        }
+                    }
+                
+                    
+                }
+
+                setTimeout(() => {
+                    tick();
+                }, 10);
+            }
+
+            function removeY(y,tablero) {
+                WipTabl = DeepCopy(tablero)
+                for (let WipY = 0; WipY < tablero.length; WipY++) {
+                    const WipFila = tablero[WipY];
+                    if(WipY<=y){
+                        if(WipY-1 < 0){
+                            filaBacia = []
+                            for (let i = 0; i < w.length; i++) {
+                                filaBacia.push(0)
+                                
+                            }
+                            WipTabl[WipY] = filaBacia
+                        }else{
+                            WipTabl[WipY] = tablero[WipY-1]
+                        }
+                        
+                    }
+                }
+                return WipTabl
+            }
+
+            function getScreen(tablero,Findex,Frot,Fx,Fy) {
+
+                if(Findex == -1){
+                    return tablero
+                }
+
+                let ret = DeepCopy(tablero)
+                //console.log(ret)
+                
+                let ficha = fichas[Findex][Frot]
+                for (let y = 0; y < ficha.length; y++) {
+                    for (let x = 0; x < ficha[y].length; x++) {
+                        if(y+Fy > ret.length-1){
+                            return "hit"
+                        }
+                        if(x+Fx > ret[0].length-1){
+                            return "Wall"
+                        }
+                        if(x+Fx < 0){
+                            return "Wall"
+                        }
+                        const data = ret[y+Fy][x+Fx] + ficha[y][x];
+                        if(data == 2){
+                            return "hit"
+                        }
+                        ret[y+Fy][x+Fx] = data
+                    }
+                }
+                return ret
+            }
+
+            function drawXYrect(x, y, grosor, color) {
+                //console.log("fufo?")
+                if(color) 
+                  ctx.fillStyle = color; 
+                else 
+                  ctx.fillStyle = "#555555";
+                ctx.fillRect(x, y, grosor, grosor);
+            }
+
+            function rgb(r,g,b) {
+                var r_ = check(decToHex(r));
+                var g_ = check(decToHex(g));
+                var b_ = check(decToHex(b));
+                return "#"+r_+g_+b_;
+            }
+
+            function decToHex(n) {
+                if(n<0){
+                    n = 0xFFFFFFFF + n + 1;
+                }
+                return Math.round(n).toString(16).toUpperCase();
+            }
+
+            function check(n){
+                //console.log(n)
+                if(n.length>2){
+                    return "FF";
+                }else if (n.length<2){
+                    return "0"+n;
+
+                }else return n
+            }
+
+            canvas.addEventListener('mousemove',function onMouseover(e){
+                ratonx = e.clientX;
+                ratony = e.clientY;
+            });
+
+            function DeepCopy(arr,n) {
+                if(!n) n = 0
+                if(arr instanceof Array){
+                    let ret = []
+                    for (let i = 0; i < arr.length; i++) {
+                        ret[i] = DeepCopy(arr[i],n+1)
+                        //console.log(n+":"+ret+"("+i+")")
+                    }
+                    return ret
+                }
+                return arr
+            }
+
+            init()
+            
+        </script>
+    </body>
+</html>
+
+
+
+

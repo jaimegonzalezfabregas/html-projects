@@ -1,0 +1,948 @@
+<html>
+    <head>
+        <style>
+            canvas {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            body{
+                width: 100%;
+                height: 100%;
+                margin: 0px;
+                padding: 0px;
+            }
+        </style>
+    </head>
+    <body>          
+        
+        <img style="display:none" id="Character" src="tiles/Character.png">
+
+        <img style="display:none" id="Scape" src="tiles/Scape_1.png">
+        <img style="display:none" id="Floor" src="tiles/Ground_0.png">
+        <img style="display:none" id="Wall_0000" src="tiles/Wall_0.png">
+        <img style="display:none" id="Wall_1000" src="tiles/Wall_1_0.png">
+        <img style="display:none" id="Wall_0010" src="tiles/Wall_1_1.png">
+        <img style="display:none" id="Wall_0100" src="tiles/Wall_1_2.png">
+        <img style="display:none" id="Wall_0001" src="tiles/Wall_1_3.png">
+        <img style="display:none" id="Wall_1100" src="tiles/Wall_2_0.png">
+        <img style="display:none" id="Wall_0011" src="tiles/Wall_2_1.png">
+        <img style="display:none" id="Wall_1010" src="tiles/Wall_3_0.png">
+        <img style="display:none" id="Wall_0110" src="tiles/Wall_3_1.png">
+        <img style="display:none" id="Wall_0101" src="tiles/Wall_3_2.png">
+        <img style="display:none" id="Wall_1001" src="tiles/Wall_3_3.png">
+        <img style="display:none" id="Wall_1110" src="tiles/Wall_4_0.png">
+        <img style="display:none" id="Wall_0111" src="tiles/Wall_4_1.png">
+        <img style="display:none" id="Wall_1101" src="tiles/Wall_4_2.png">
+        <img style="display:none" id="Wall_1011" src="tiles/Wall_4_3.png">
+        <img style="display:none" id="Wall_1111" src="tiles/Wall_5.png">
+                                           
+
+        <canvas id="canvas" width="1920" height="1080"></canvas>
+        <script>
+	    var canvas = document.getElementById("canvas");
+            var ctx = canvas.getContext("2d");
+            var keys = [];
+            var ratony = 0;
+            var ratonx = 0;
+            window.onkeyup = function(e) { keys[e.keyCode] = false; }
+            window.onkeydown = function(e) { keys[e.keyCode] = true; }
+            
+            //Dir:
+            //   N
+            // W + E
+            //   S
+            // wall_NSEW
+            let dirs = ["N","S","W","E"]
+            var level = null
+            var pile = [] 
+            var solution = solution
+            var tryes = 1
+            
+
+
+            let restartTimer = -1
+
+            let W = 14      
+            let H = 10
+            let jiteredH = H
+            let jiteredW = W
+
+            let AlSiguienteEmpiezas = false
+            let readingTime = 4
+            let restartImplementation = null
+            let CharX = null
+            let CharY = null
+            let OutX = null
+            let OutY = null
+            let Speed = 0.2
+            let lastMoving = false
+            let moving = false
+            let timeout = 10
+
+            tick();
+
+            function tick() {
+
+                if(restartTimer>=0){
+                    restartTimer++
+                }
+
+                ctx.fillRect(0, 0, canvas.height, canvas.width);
+                canvas.height = canvas.clientHeight;
+                canvas.width = canvas.clientWidth;
+
+                timeout = 10
+                if(AlSiguienteEmpiezas){
+                    AlSiguienteEmpiezas = false
+                    let MinSteps =  max(Math.round(6-tryes/2),0)      
+                    let MinTiles =  max(Math.round(0-tryes/2),0)     
+                    let MaxSteps =  max(Math.round(16-tryes/2),0)    
+                    let MaxTiles =  1000  // just for symetry purposes, not realy needed  
+                    let MinBoundingBox = 5
+                    let MinSingleMoveLength = 2//max(Math.round(0-tryes/10),0) 
+                    let initialJitering = 5
+                    
+                    jiteredW = max(MinBoundingBox,W + Math.round(Math.random()*(tryes+initialJitering)-(tryes+initialJitering)/2))
+                    jiteredH = max(MinBoundingBox,H + Math.round(Math.random()*(tryes+initialJitering)-(tryes+initialJitering)/2))
+
+                    levelData = GetConstrainedLevel(jiteredW,jiteredH,MinSteps,MaxSteps,MinTiles,MaxTiles,MinBoundingBox,readingTime*1000,MinSingleMoveLength)
+                    level = levelData[0]
+                    solution = levelData[1]
+                    if(levelData == "Failed"){
+                        level = null
+                        tryes++
+                    }else{
+                        
+                        tryes = 0
+                        console.log("found It")
+                        console.log(levelData,level)
+                        level = postproces(level)
+                        restartImplementation = DeepCopy(level)
+
+                        for (let y = 0; y < level.length; y++) {
+                            const fila = level[y];
+                            for (let x = 0; x < fila.length; x++) {
+                                const d = fila[x];
+                                if(d=="@"){
+                                    CharX = x
+                                    CharY = y
+                                }
+                                if(d=="F"){
+                                    OutX = x
+                                    OutY = y
+                                }
+                            }
+                        }
+                    }
+
+                }else if(level == null){
+
+                    ctx.font = "30px Comic Sans MS"
+                    ctx.fillStyle = rgb(0,0,0)
+                    ctx.textAlign = "center"
+                    console.log(GetWaitMensage(tryes))
+                    ctx.fillText(GetWaitMensage(tryes),canvas.width/2,canvas.height/2)
+                    AlSiguienteEmpiezas = true
+                    
+                }else{
+                    //draw
+                    let zoom = min(canvas.height/level.length,canvas.width/level[0].length)
+                    for (let y = 0; y < level.length; y++) {
+                        const fila = level[y];
+                        for (let x = 0; x < fila.length; x++) {
+                            const data = fila[x];
+                        
+                            if(data=="#"){
+                                let imageName = "Wall_"
+
+                                let outconect = "#"
+                                // wall_NSEW
+
+                                if(MirameQueHayEnXYdeArr(x,y-1,level,outconect)=="#") imageName = imageName + "1"
+                                else imageName = imageName + "0"
+
+                                if(MirameQueHayEnXYdeArr(x,y+1,level,outconect)=="#") imageName = imageName + "1"
+                                else imageName = imageName + "0"
+
+                                if(MirameQueHayEnXYdeArr(x+1,y,level,outconect)=="#") imageName = imageName + "1"
+                                else imageName = imageName + "0"
+
+                                if(MirameQueHayEnXYdeArr(x-1,y,level,outconect)=="#") imageName = imageName + "1"
+                                else imageName = imageName + "0"
+                                
+                                
+                                drawImageXYRotSize(imageName,(canvas.width/2)-((fila.length*zoom)/2)+(x*zoom)-zoom/2,(canvas.height/2)-((level.length*zoom)/2)+(y*zoom)-zoom/2,0,zoom,zoom)
+                            
+                            }else{
+                                drawImageXYRotSize("Floor",(canvas.width/2)-((fila.length*zoom)/2)+(x*zoom)-zoom/2,(canvas.height/2)-((level.length*zoom)/2)+(y*zoom)-zoom/2,0,zoom,zoom)
+                            }
+                            //console.log((canvas.width/2)-((fila.length*zoom)/2)+(x*zoom),(canvas.height/2)-((level.length*zoom)/2)+(y*zoom))
+                            
+                            
+                        }
+                    }
+                    //draw scape
+                    drawImageXYRotSize("Scape",(canvas.width/2)-((level[0].length*zoom)/2)+(OutX*zoom)-zoom/2,(canvas.height/2)-((level.length*zoom)/2)+(OutY*zoom)-zoom/2,0,zoom,zoom)
+                    //fill pared
+                    for (let y = -10; y < level.length+10; y++) {
+                        for (let x = -10; x < level[0].length+10; x++) {
+
+                            let a = MirameQueHayEnXYdeArr(x,y,level,"#")=="#"
+                            let b = MirameQueHayEnXYdeArr(x+1,y,level,"#")=="#"
+                            let c = MirameQueHayEnXYdeArr(x,y+1,level,"#")=="#"
+                            let d = MirameQueHayEnXYdeArr(x+1,y+1,level,"#")=="#"
+
+                            if(a&&b&&c&&d){
+                                drawXYrect((canvas.width/2)-((level[0].length*zoom)/2)+(x*zoom)+zoom/2,(canvas.height/2)-((level.length*zoom)/2)+(y*zoom)+zoom/2,zoom+1,rgb(76,124,150))
+                            }
+
+                        }
+                    }
+                    //draw char
+                    //drawXYrect((canvas.width/2)-((level[0].length*zoom)/2)+(CharX*zoom),(canvas.height/2)-((level.length*zoom)/2)+(CharY*zoom),zoom,rgb(40,200,20))
+                    drawImageXYRotSize("Character",(canvas.width/2)-((level[0].length*zoom)/2)+(CharX*zoom)-zoom/2,(canvas.height/2)-((level.length*zoom)/2)+(CharY*zoom)-zoom/2,0,zoom,zoom)
+
+                    
+                    let goal = getPlayerPos(level)
+
+                    moving = false
+
+                    if(Math.abs(goal[0] - CharX)<Speed){
+                        CharX = goal[0]   
+                    }
+
+                    if(goal[0] < CharX){
+                        CharX -= Speed
+                        moving = true
+                    }
+
+                    if(goal[0] > CharX){
+                        CharX += Speed
+                        moving = true
+                    }
+
+                    if(Math.abs(goal[1] - CharY)<Speed){
+                        CharY = goal[1]
+
+                    }
+
+                    if(goal[1] < CharY){
+                        CharY -= Speed
+                        moving = true
+                    }
+
+                    if(goal[1] > CharY){
+                        CharY += Speed
+                        moving = true
+                    }
+
+                    
+
+                    //listen
+                    if(!moving){
+                        if(keys[37]){
+                            levelNewData = moveSlideInGame(level,"W")
+                            level = levelNewData[0]
+                            moving = true
+
+                        }else if(keys[38]){
+                            levelNewData = moveSlideInGame(level,"N")
+                            level = levelNewData[0]
+                            moving = true
+
+                        }else if(keys[39]){
+                            levelNewData = moveSlideInGame(level,"E")
+                            level = levelNewData[0]
+                            moving = true
+
+                        }else if(keys[40]){
+                            levelNewData = moveSlideInGame(level,"S")
+                            level = levelNewData[0]
+                            moving = true
+
+                        }
+                    }
+                    if(lastMoving && !moving){
+                        if(CharX == OutX && CharY == OutY){
+                            restartTimer++
+                            timeout = 100
+                        } 
+                    }
+                    lastMoving = moving
+
+                    if(keys[82]){
+                        level = DeepCopy(restartImplementation)
+                        let Goal = getPlayerPos(level)
+                        CharX = Goal[0]
+                        CharY = Goal[1]
+                    }
+
+                    
+                    
+                     
+                    
+                }
+
+                if(restartTimer>30){
+                    level = null
+                    restartTimer = -1
+                }
+
+                setTimeout(() => {
+                    tick()
+                }, timeout);
+            }
+
+            function MirameQueHayEnXYdeArr(x,y,Arr,OutOfBoundsResponse){
+                if(y>=0 && y<Arr.length && x>=0 && x<Arr[y].length){
+                    return Arr[y][x]
+                }
+                else return OutOfBoundsResponse
+            }
+
+            function GetWaitMensage(i) {
+                if(i == 0) return "you won!!, calculating next level"
+                if(i == 1) return "This may take a while"
+                if(i == 2) return "Sorry for making you wait this much"
+                if(i == 3) return "Each "+(readingTime+2)+" secs (or so) a new text will pop on the waiting screen"
+                if(i == 4) return "You have been waiting for a level for at least "+(4*readingTime)+" secs now"
+                if(i == 5) return "As level generation is random finding a suitable one can be hard"
+                if(i == 6) return "Every "+(readingTime+2)+" secs (or so) the requerements for a level to be considered as a playable level drop down"
+                if(i == 7) return "any moment now...."
+                if(i == 8) return "you just got a secret achivement for the most pacient person ever"
+                if(i == 9) return "have you ever thought about going for a Guiness record: the most pacient person on history"
+                return "there are no more mesages, sorry, but we are still looking for a cool level"
+            }
+
+            function NewLevel(W,H,pop){
+                ret = []
+                probability = pop
+                for (let y = 0; y < H; y++) {
+                    fila = []
+                    for (let x = 0; x < W; x++) {
+                        if(y==0 || x==0 || x == W-1 || y == H-1 || y==1 || x==1 || x == W-2 || y == H-2 || Math.random()>probability){
+                            fila.push("#")
+                        }else fila.push(" ") 
+                    }       
+                    ret.push(fila)             
+                }
+
+                //console.log(PrintArr(ret))
+
+                let XEntrada = 0
+                let YEntrada = 0
+
+                ParedEntrada = dirs[Math.floor(Math.random()*dirs.length)]
+
+                if(ParedEntrada == "N"){
+                    YEntrada = 1
+                    XEntrada = 3+Math.floor(Math.random()*(W-6))
+                }else
+                if(ParedEntrada == "S"){
+                    YEntrada = H-2
+                    XEntrada = 3+Math.floor(Math.random()*(W-6))
+                }else
+                if(ParedEntrada == "E"){
+                    XEntrada = W-2
+                    YEntrada = 3+Math.floor(Math.random()*(H-6))
+                }else
+                if(ParedEntrada == "W"){
+                    XEntrada = 1
+                    YEntrada = 3+Math.floor(Math.random()*(H-6))
+                }
+                ret[YEntrada][XEntrada] = "@"
+
+                //console.log(PrintArr(ret))
+
+                while(true){
+                    let XSaida = 0
+                    let YSaida = 0
+
+                    ParedSalida = dirs[Math.floor(Math.random()*dirs.length)]
+
+                    if(ParedSalida == "N"){
+                        YSaida = 1
+                        XSaida = 3+Math.floor(Math.random()*(W-6))
+                    }else
+                    if(ParedSalida == "S"){
+                        YSaida = H-2
+                        XSaida = 3+Math.floor(Math.random()*(W-6))
+                    }else
+                    if(ParedSalida == "E"){
+                        XSaida = W-2
+                        YSaida = 3+Math.floor(Math.random()*(H-6))
+                    }else
+                    if(ParedSalida == "W"){
+                        XSaida = 1
+                        YSaida = 3+Math.floor(Math.random()*(H-6))
+                    }
+
+                    if(YSaida != YEntrada && XSaida != XEntrada){
+                        ret[YSaida][XSaida] = "F"
+
+                        while(true){
+                            let improvedData = improveLevel(ret)
+                            ret = improvedData[0]
+                            //console.log("improving level")
+                            if(improvedData[1]==0){
+                                return ret
+                            }
+                        }
+                    }
+                }
+
+                
+                
+            }
+
+            function improveLevel(level) {
+                let ret = DeepCopy(level)
+                let changes = 0
+                for (let y = 2; y < ret.length-2; y++) {
+                    const fila = ret[y];
+                    for (let x = 2; x < fila.length-2; x++) {
+                        
+                        let self = (ret[y][x] == "#") 
+                        let up = (ret[y-1][x] == "#")
+                        let down = (ret[y+1][x] == "#")
+                        let left = (ret[y][x-1] == "#")
+                        let right = (ret[y][x+1] == "#")
+                        
+                        if(up && down && left && right && !self){
+                            
+                            ret[y][x] = "#"
+                            changes++
+                            //console.log("cruz"+x+" "+y)
+                        }
+
+                        if(self){
+                            let UpL = (ret[y-1][x-1] == "#")
+                            let UpR = (ret[y-1][x+1] == "#")
+                            let DownL = (ret[y+1][x-1] == "#")
+                            let DownR = (ret[y+1][x+1] == "#")
+
+                            if(UpL && ret[y-1][x] == " " && ret[y][x-1] == " "){
+                                if(Math.random()<1/2) ret[y][x-1] = "#"
+                                else ret[y-1][x] = "#"
+                                changes++
+                                //console.log("Diag1")
+
+                            }
+                            if(UpR && ret[y-1][x] == " " && ret[y][x+1] == " "){
+                                if(Math.random()<1/2) ret[y][x+1] = "#"
+                                else ret[y-1][x] = "#"
+                                changes++
+                                //console.log("Diag2")
+
+                            }
+                            if(DownL && ret[y+1][x] == " " && ret[y][x-1] == " "){
+                                if(Math.random()<1/2) ret[y][x-1] = "#"
+                                else ret[y+1][x] = "#"
+                                changes++
+                                //console.log("Diag3")
+
+                            }
+                            if(DownR && ret[y+1][x] == " " && ret[y][x+1] == " "){
+                                if(Math.random()<1/2) ret[y][x+1] = "#"
+                                else ret[y+1][x] = "#"
+                                changes++
+                                //console.log("Diag4")
+
+                            }
+                        }
+                        
+
+                    }
+                }
+
+                for (let y = 0; y < ret.length; y++) {
+                    const fila = ret[y];
+                    if(fila[1]=="F" && fila[2]==" "){
+                        ret[y-1][2] = " "
+                        ret[y+1][2] = " "
+                    }
+
+                    if(fila[fila.length-2]=="F" && fila[fila.length-3]==" "){
+                        ret[y-1][fila.length-3] = " "
+                        ret[y+1][fila.length-3] = " "
+                    }
+                }
+                for (let x = 0; x < ret[0].length; x++) {
+                    if(ret[1][x]=="F" && ret[2][x]==" "){
+                        ret[2][x+1] = " "
+                        ret[2][x-1] = " "
+                    }      
+                    if(ret[ret.length-2][x]=="F" && ret[ret.length-3][x]==" "){
+                        ret[ret.length-3][x+1] = " "
+                        ret[ret.length-3][x-1] = " "
+
+                    }
+                }
+
+
+
+
+                //console.log("retoques: "+ changes)
+                return [ret,changes]
+            }
+
+            function postproces(level){
+                console.log("posprocesing...")
+                ret = DeepCopy(level)
+                WorkData = DeepCopy(level)
+                for (let i = 0; i < jiteredH*jiteredW; i++) {
+
+                    for (let y = 0; y < WorkData.length; y++) {
+                        const fila = WorkData[y];
+                        for (let x = 0; x < fila.length; x++) {
+                            const data = fila[x];
+                            if(data==" "){
+                                if(MirameQueHayEnXYdeArr(x+1,y,WorkData," ")=="@"|| MirameQueHayEnXYdeArr(x-1,y,WorkData," ")=="@" || MirameQueHayEnXYdeArr(x,y+1,WorkData," ")=="@" || MirameQueHayEnXYdeArr(x,y-1,WorkData," ")=="@"){
+                                    WorkData[y][x]="@" 
+                                }
+                            }
+                        }
+                    }
+
+                }
+
+                console.log("Initial:")
+                PrintArr(ret)
+
+                for (let y = 0; y < WorkData.length; y++) {
+                    const fila = WorkData[y];
+                    for (let x = 0; x < fila.length; x++) {
+                        const data = fila[x];
+                        if(data==" "){
+                            ret[y][x]="#"
+                        }
+                    }
+                }
+                console.log("Remove poquets")
+
+                PrintArr(ret)
+                console.log("borders be gone")
+
+                //Remove un used borders
+                let cambios = 1
+                while(cambios != 0){
+                    Nextret = removeBorders(ret)
+                    ret = Nextret[0]
+                    cambios = Nextret[1]
+                }
+
+                console.log("done...")
+
+                PrintArr(ret)
+
+                return ret
+            }
+
+            function removeBorders(Arr) {
+                let WipArr = DeepCopy(Arr)
+                let changes = 0
+                for (let i = 0; i < 8; i++) {
+                    console.log("turning:")
+                    PrintArr(WipArr)
+                    WipArr = SpinArr(WipArr)
+                    let Procesed = removeTopBorders(WipArr)
+                    WipArr = Procesed[0]
+                    if(Procesed[1]) changes++
+                }
+                
+
+                
+                return [WipArr,changes]
+            }
+
+            function SpinArr(arr) {
+                let ret = []
+                for (let y = 0; y < arr[0].length; y++) {
+                    let Newfila = []
+                    for (let x = 0; x < arr.length; x++) {
+                        Newfila.push(arr[x][(arr[0].length-1)-y])
+                    }
+                    ret.push(Newfila)
+                }
+                return ret
+            }
+
+            function removeTopBorders(Arr) {
+                const fila = Arr[1];
+                let WallCount = 0
+                for (let x = 0; x < fila.length; x++) {
+                    if(Arr[1][x]=="#"){
+                        WallCount++
+                    }
+                }
+                if(WallCount == fila.length){
+                    Arr.shift()
+                    return [Arr,true]
+                }
+                
+                return [Arr,false]
+                
+            }
+
+            function min(a,b) {
+                if(a<b){
+                    return a
+                }
+                return b
+            }
+
+            function max(a,b) {
+                if(a>b){
+                    return a
+                }
+                return b
+            }
+
+            function GetConstrainedLevel(W,H,MinSteps,MaxSteps,MinTiles,MaxTiles,MinBoundingBox,time,MinSingleMoveLength) {
+                let start = Date.now()
+
+                while(Date.now()<start+time){
+                    //console.log(Date.now())
+                    let WipLevel = NewLevel(W,H,Math.random()*0.5+0.3)
+                    //console.log(WipLevel)
+                    let Solution = resolve(WipLevel,MaxSteps,MaxTiles)
+                    if(Solution != "Unsolveable"){
+                        let Steps = Solution[0].length
+                        let Tiles = Solution[1]
+                        if(Tiles>MinTiles ){
+                            if(Steps>MinSteps){
+                                let BoundsSingMove = getBoundingBox(Solution[0],WipLevel,MinSingleMoveLength)
+                                if(BoundsSingMove[2]>=MinSteps){
+                                    if(min(BoundsSingMove[0],BoundsSingMove[1])>=MinBoundingBox){
+                                        return [WipLevel,Solution]
+                                    }else console.log("toSmall")
+                                }else console.log("Not enough interesting moves: "+BoundsSingMove[2])
+                            }else console.log("toShort Steps: "+Steps)
+                        }else console.log("toShort tiles:"+Tiles)
+                    }//else console.log("Unsolvable")
+                    //console.log("Nope")
+                }
+                return "Failed"
+            }
+
+            function getBoundingBox(steps,tablero,MinValidMove) {
+                let wipTablero = DeepCopy(tablero)
+                let initPos = getPlayerPos(wipTablero)
+                let minX = initPos[0]
+                let minY = initPos[0]
+                let maxX = initPos[1]
+                let maxY = initPos[1]
+                let validMoves = 0
+                for (let i = 0; i < steps.length; i++) {
+                    const dir = steps[i];
+                    let NextData = moveSlide(wipTablero,dir)
+                    wipTablero = NextData[0]
+                    if(NextData[1]>=MinValidMove) validMoves++
+                    let Pos = getPlayerPos(wipTablero)
+                    minX = min(minX,Pos[0])
+                    minY = min(minY,Pos[1])
+                    maxX = max(maxX,Pos[0])
+                    maxY = max(maxY,Pos[1])
+                }
+                return [maxX-minX,maxY-minY,validMoves]
+            }
+
+            function getPlayerPos(tablero) {
+                
+                for (let y = 0; y < tablero.length; y++) {
+                    const fila = tablero[y];
+                    for (let x = 0; x < fila.length; x++) {
+                        if(fila[x]=="@") return [x,y]
+                    }
+                }
+                console.log("FATAL ERROR: No player position info found")
+                //console.log(tablero)
+                //console.log("-----------------")
+            }
+
+            function resolve(ScreenData,MaxSteps,MaxTiles) {   
+                pile = []             
+                addToPile([[],DeepCopy(ScreenData),0]) // operations, tablero, length
+                let PlacesIveBeen = []
+                while(true){
+                    if(pile.length == 0){
+                        //console.log("Not so FATAL ERROR: No more moves")
+                        return "Unsolveable"
+                    }
+                    //console.log(pile.length)
+
+                    let Wip = getFromPile()
+                    let Recorrido = Wip[0]
+                    let MapaActual = Wip[1]
+                    let distancia = Wip[2]
+
+                    if(Recorrido.length < MaxSteps && distancia < MaxTiles){
+
+                        let lastAction = Recorrido[Recorrido.length-1]
+                        //console.log(lastAction)
+                        let posibleDirs = []
+                        if(lastAction == "N" || lastAction == "S"){
+                            posibleDirs = ["W","E"]
+                        }else if(lastAction == "W" || lastAction == "E"){
+                            posibleDirs = ["N","S"]
+                        }else posibleDirs = ["N","S","E","W"]
+
+                        //console.log(posibleDirs)
+
+                        for (let i = 0; i < posibleDirs.length; i++) {
+                            const Dir = posibleDirs[i];
+                            //console.log(Dir)
+                            next = moveSlide(MapaActual,Dir)
+
+                            if(next[2]){ // solved
+                                let newRecorrido = DeepCopy(Recorrido)
+                                newRecorrido.push(Dir)
+                                return [newRecorrido,distancia+next[1]]
+                            } 
+                            if(next[1]!=0){ // si me he movido
+                                let pos = getPlayerPos(next[0])
+                                //console.log(pos)
+                                
+                                if( !ArrContainsThing(PlacesIveBeen,pos) ){
+                                    let newRecorrido = DeepCopy(Recorrido)
+                                    newRecorrido.push(Dir)
+                                    PlacesIveBeen.push(DeepCopy(pos))
+                                    addToPile([newRecorrido,next[0],distancia+next[1]])
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            function ArrContainsThing(arr,thg){
+                for (let i = 0; i < arr.length; i++) {
+                    if(arr[i]==thg) return true
+                }
+                return false
+            }
+
+            function getFromPile(){
+                return pile.shift()
+            }
+            function addToPile(Data) {
+                pile.push(Data)
+            }
+
+            function moveSlide(ScreenData,Dir) {
+                let ret = DeepCopy(ScreenData)
+                let length = 0
+                while(true){
+                    let next = moveOne(ret,Dir)
+                    //console.log(next)
+
+                    if(next == "Hit"){
+                        return [ret,length, false]
+                    }else if(next == "Won"){
+                        return [ret,length, true]
+                    }else{
+                        ret = next
+                        length++
+                    }
+                }
+
+            }
+
+            function moveSlideInGame(ScreenData,Dir) {
+                let ret = DeepCopy(ScreenData)
+                let length = 0
+                while(true){
+                    let next = moveOneInGame(ret,Dir)
+                    //console.log(next)
+
+                    if(next == "Hit"){
+                        return [ret,length, false]
+                    }else if(next == "Won"){
+                        return [ret,length, true]
+                    }else{
+                        ret = next
+                        length++
+                    }
+                }
+
+            }
+
+            function moveOneInGame(ScreenData,Dir){
+                let ret = DeepCopy(ScreenData)
+                if(ret == undefined) {return null}
+                let Ax = 0
+                let Ay = 0
+
+                if(Dir == "N"){
+                    Ay = -1
+                }else if(Dir == "S"){
+                    Ay = 1
+                }else if(Dir == "W"){
+                    Ax = -1
+                }else if(Dir == "E"){
+                    Ax = 1
+                }
+
+                for (let y = 0; y < ret.length; y++) {
+                    const fila = ret[y];
+                    for (let x = 0; x < fila.length; x++) {
+                        const casilla = fila[x];
+                        if(casilla == "@"){
+
+                            if(y+Ay >= ret.length || x+Ax >= ret[0].length || y+Ay < 0 || x+Ax < 0){
+                                return "Hit"
+                            }
+
+                            if(ret[y+Ay][x+Ax] == " " || ret[y+Ay][x+Ax] == "F"){
+                                ret[y+Ay][x+Ax] = "@"
+                                ret[y][x] = " "
+                                return ret
+                            }   
+                            return "Hit"
+                        }
+                    }
+                }
+                console.log("FATAL ERROR: No Character pos info found when moving")
+                PrintArr(ret)
+            }
+
+
+
+
+
+            function moveOne(ScreenData,Dir){
+                let ret = DeepCopy(ScreenData)
+                if(ret == undefined) {return null}
+                let Ax = 0
+                let Ay = 0
+
+                if(Dir == "N"){
+                    Ay = -1
+                }else if(Dir == "S"){
+                    Ay = 1
+                }else if(Dir == "W"){
+                    Ax = -1
+                }else if(Dir == "E"){
+                    Ax = 1
+                }
+
+                for (let y = 0; y < ret.length; y++) {
+                    const fila = ret[y];
+                    for (let x = 0; x < fila.length; x++) {
+                        const casilla = fila[x];
+                        if(casilla == "@"){
+
+                            if(y+Ay >= ret.length || x+Ax >= ret[0].length || y+Ay < 0 || x+Ax < 0){
+                                return "Hit"
+                            }
+
+                            if(ret[y+Ay][x+Ax] == " "){
+                                ret[y+Ay][x+Ax] = "@"
+                                ret[y][x] = " "
+                                return ret
+                            }else{
+                                if(ret[y+Ay][x+Ax] == "F"){
+                                    return "Won"
+                                }else return "Hit"
+                            }   
+                        }
+                    }
+                }
+                console.log("FATAL ERROR: No Character pos info found when moving")
+                PrintArr(ret)
+            }
+
+            function PrintArr(arr){
+                for (let y = 0; y < arr.length; y++) {
+                    str = y+": "
+                    for (let x = 0; x < arr[y].length; x++) {
+                        const element = arr[y][x];
+                        str = str + " " + element
+                    }
+                    console.log(str)
+                }
+            }
+
+            function drawXYrect(x, y, grosor, color) {
+                //console.log("fufo?")
+                if(color) 
+                  ctx.fillStyle = color; 
+                else 
+                  ctx.fillStyle = "#555555";
+                ctx.fillRect(x, y, grosor, grosor);
+            }
+            function rgb(r,g,b) {
+                var r_ = check(decToHex(r));
+                var g_ = check(decToHex(g));
+                var b_ = check(decToHex(b));
+                return "#"+r_+g_+b_;
+            }
+            function decToHex(n) {
+                if(n<0){
+                    n = 0xFFFFFFFF + n + 1;
+                }
+                return Math.round(n).toString(16).toUpperCase();
+            }
+            function check(n){
+                //console.log(n)
+                if(n.length>2){
+                    return "FF";
+                }else if (n.length<2){
+                    return "0"+n;
+
+                }else return n
+            }
+            canvas.addEventListener('mousemove',function onMouseover(e){
+                ratonx = e.clientX;
+                ratony = e.clientY;
+            });
+            window.addEventListener('DOMMouseScroll', mouseWheelEvent);
+            window.addEventListener("wheel", mouseWheelEvent);
+            function mouseWheelEvent(e){
+                //console.log(e.wheelDelta ? e.wheelDelta : -e.detail);
+                var movement = (e.wheelDelta ? e.wheelDelta : -e.detail)/120;
+                if(movement<0){
+                    ScrollUp();
+                }else{
+                    ScrollDown();
+                }
+            }
+            function ScrollUp(){
+
+            }
+            function ScrollDown(){
+
+            }
+            function DeepCopy(arr,n) {
+                if(!n) n = 0
+                if(arr instanceof Array){
+                    let ret = []
+                    for (let i = 0; i < arr.length; i++) {
+                        ret[i] = DeepCopy(arr[i],n+1)
+                        //console.log(n+":"+ret+"("+i+")")
+                    }
+                    return ret
+                }
+                return arr
+            }
+
+            function drawImageXYRotSize(img,x,y,rot,w,h) {
+                var width = w;
+                var height = h;
+                //console.log(width,height,x,y);
+                ctx.translate(x, y);
+                ctx.rotate(rot);
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(document.getElementById(img), width / 2, height / 2, width, height);
+                ctx.rotate(-rot);
+                ctx.translate(-x, -y);
+            }
+        </script>
+    </body>
+</html>
+
+
+
+
