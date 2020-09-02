@@ -966,15 +966,15 @@
 
                 if ( Math.abs( xDiff ) > Math.abs( yDiff ) ) {/*most significant*/
                     if ( xDiff > 0 ) {
-                        /* left swipe */ 
+                        level = moveSlideInGame(level,"E")
                     } else {
-                        /* right swipe */
+                        /* right swipe */level = moveSlideInGame(level,"W")
                     }                       
                 } else {
                     if ( yDiff > 0 ) {
-                        /* up swipe */ 
+                        /* up swipe */ level = moveSlideInGame(level,"N")
                     } else { 
-                        /* down swipe */
+                        /* down swipe */level = moveSlideInGame(level,"S")
                     }                                                                 
                 }
                 /* reset values */
