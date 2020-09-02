@@ -966,15 +966,19 @@
 
                 if ( Math.abs( xDiff ) > Math.abs( yDiff ) ) {/*most significant*/
                     if ( xDiff > 0 ) {
-                        level = moveSlideInGame(level,"E")
+                        level = moveSlideInGame(level,"E")[0]
+                        moving = true
                     } else {
-                        /* right swipe */level = moveSlideInGame(level,"W")
+                        /* right swipe */level = moveSlideInGame(level,"W")[0]
+                        moving = true
                     }                       
                 } else {
                     if ( yDiff > 0 ) {
-                        /* up swipe */ level = moveSlideInGame(level,"N")
+                        /* up swipe */ level = moveSlideInGame(level,"N")[0]
+                        moving = true
                     } else { 
-                        /* down swipe */level = moveSlideInGame(level,"S")
+                        /* down swipe */level = moveSlideInGame(level,"S")[0]
+                        moving = true
                     }                                                                 
                 }
                 /* reset values */
