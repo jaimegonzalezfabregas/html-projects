@@ -1,0 +1,330 @@
+<html>
+    <head>
+        <style>
+            canvas {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                image-rendering: pixelated;
+                image-rendering: optimizeSpeed;
+            }
+            body{
+                width: 100%;
+                height: 100%;
+                margin: 0px;
+                padding: 0px;
+            }
+        </style>
+    </head>
+    <body>  
+        <canvas id="MainCanvasDisplay" oncontextmenu="select()"></canvas>
+        <img style="display:none" id="block" src="block.png">
+        <img style="display:none" id="ilock" src="ilock.png">
+        <img style="display:none" id="qlockhitted" src="qlockhitted.png">
+        <img style="display:none" id="qlock0" src="qlock0.png">
+        <img style="display:none" id="qlock1" src="qlock1.png">
+        <img style="display:none" id="spawnercalm" src="spawnercalm.png">
+        <img style="display:none" id="spawnerdone" src="spawnerdone.png">
+        <img style="display:none" id="spawnerready" src="spawnerready.png">
+
+        
+
+        <img style="display:none" id="characterI" src="marioIdz.png">
+        <img style="display:none" id="characterD" src="marioDer.png">
+        <img style="display:none" id="simple" src="simpleEnemy.png">
+        <img style="display:none" id="boombalakuaka" src="boombalakuaka.png">
+        <img style="display:none" id="boombalakuakatrigered0" src="boombalakuakatrigered0.png">
+        <img style="display:none" id="boombalakuakatrigered1" src="boombalakuakatrigered1.png">
+        <img style="display:none" id="boombalakuakatrigered2" src="boombalakuakatrigered2.png">
+
+
+
+
+
+        <script>
+        //"simple" "boombalakuaka"
+        var entidades = []
+
+        var blockInfo = [
+            [14,12,0,false,"S"]
+        ]
+
+        var map = 
+        [
+        "b                                                                                                   ",
+        "b                                                                                                   ",
+        "b                                                                                                   ",
+        "b                                                                                                   ",
+        "b                                                                                                   ",
+        "b                          b                                                                        ",
+        "b                                                                                                   ",
+        "b                             b                                                                     ",
+        "b                                                                                                   ",
+        "b b                             b                                                                   ",
+        "b                            b                                                                      ",
+        "b        bb                                                                                         ",
+        "b  b        iiqii                                                                                   ",
+        "b         b                                                                                         ",
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"  
+        ];
+
+	    var canvas = document.getElementById("MainCanvasDisplay");
+        var ctx = canvas.getContext("2d");
+            
+        var ratonx = 0;
+        var ratony = 0;
+        
+        var caracterx = 6;
+        var caractery = map.length-6;
+
+        var camaraxaim = 0;
+        var camarayaim = 0;
+
+        var camarax = 0;
+        var camaray = 0;
+
+        var pixelSize = 100;
+        var dir = "d";
+
+        var velocidadx = 0;
+        var velocidady = 0;
+
+        var aceleracionx = 0;
+        var aceleraciony = -1;
+     
+        
+        var map1 =["b"];
+        var start = true;
+        var time = 0;
+
+
+        
+        
+        var keys = [];
+        window.onkeyup = function(e) { keys[e.keyCode] = false;}
+        window.onkeydown = function(e) { keys[e.keyCode] = true;}
+        function tick(){
+            //moveCharacter
+            if(keys[87]==true){//w
+                if(charColisionIn(caracterx,caractery+0.5)){ 
+                    aceleraciony = -1;
+                    console.log("jump");
+                }else{
+                    aceleraciony = 0.05;
+                }
+            }else{
+                aceleraciony = 0.1;
+            }
+            if(keys[65]==true){//a
+                dir = "i";
+                aceleracionx = -0.05;
+                velocidadx = velocidadx/1.1 + aceleracionx;
+            }else if(keys[68]==true){//d
+                dir = "d";
+                aceleracionx = 0.05;
+                velocidadx = velocidadx/1.1 + aceleracionx;
+            }else {
+                aceleracionx = 0;
+                velocidadx = velocidadx/2 + aceleracionx;
+
+            }
+
+            velocidady = velocidady/1.1 + aceleraciony;
+            
+            if(!charColisionIn(caracterx + velocidadx,caractery)){
+                caracterx = caracterx + velocidadx;
+            }else {
+                velocidadx = 0;
+                //caracterx = Math.round(caracterx);
+            }
+
+            if(!charColisionIn(caracterx,caractery + velocidady)){
+                caractery = caractery + velocidady;
+            }else {
+                velocidady = 0;
+                caractery = Math.round(caractery);
+
+            }
+
+            //hitaqlock
+
+            if((get(caracterx+0.5,caractery-1)=="q") && (keys[87]==true||!charColisionIn(caracterx+0.5,caractery+0.5))){
+                
+                set(caracterx+0.5,caractery-1,"h")
+                for (let i = 0; i < blockInfo.length; i++) {
+                    const element = blockInfo[i];
+                    if(element[0]==Math.trunc(caracterx+0.5) && element[1]==Math.trunc(caractery-1)){
+                        element[3] = true;
+                    }
+                    
+                }
+                //console.log(caracterx+0.5,caractery-1,blockInfo);
+                
+            }
+
+            //set up the canvas
+            ctx.fillRect(0, 0, canvas.height, canvas.width);
+            canvas.height = canvas.clientHeight;
+            canvas.width = canvas.clientWidth;
+
+            //camara pos stuff
+            camaraxaim = -caracterx+((canvas.width/2)/pixelSize);
+            camarayaim = -caractery+((canvas.height/2)/pixelSize);
+            if(start){
+                console.log(start);
+                camarax = camaraxaim;
+                camaray = camarayaim;
+                start = false
+            }else{
+                pixelSize = canvas.height/10-Math.pow(Math.sqrt(Math.pow(camaraxaim-camarax,2)+Math.pow(camarayaim-camaray,2))/2,2);
+                
+                if(camaraxaim!=camarax){
+                    camarax = camarax + (camaraxaim-camarax)/10;
+                }
+                if(camarayaim!=camaray){
+                    camaray = camaray + (camarayaim-camaray)/10;
+                }
+            }
+
+            //drawtheworld
+
+            for (let y = 0; y < map.length; y++) {
+                const row = Array.from(map[y]);
+                for (let x = 0; x < row.length; x++) {
+                    const element = row[x];
+                    if(get(x,y)==" "){}else if(get(x,y)=="b"){
+                        var cords = toScreen(x,y);
+                        //drawXYrect(cords[0],cords[1],pixelSize,pixelSize,rgb(0,0,0));
+                        drawImageXYRotSize("block",cords[0],cords[1],0,pixelSize,pixelSize);
+                    }else if(get(x,y)=="i"){
+                        var cords = toScreen(x,y);
+                        //drawXYrect(cords[0],cords[1],pixelSize,pixelSize,rgb(0,0,0));
+                        drawImageXYRotSize("ilock",cords[0],cords[1],0,pixelSize,pixelSize);
+                    }else if(get(x,y)=="h"){
+                        var cords = toScreen(x,y);
+                        for (let i = 0; i < blockInfo.length; i++) {
+                            console.log("up");
+                            const element = blockInfo[i];
+                            if(element[0]==Math.trunc(x) && element[1]==Math.trunc(y)){
+                                if(element[3]==true){
+                                    if(element[4]=="S"){
+                                        element[2]++;
+                                        if(element[2]==3){
+                                            element[4]="B"
+                                        }
+                                    }else if(element[4]=="B"){
+                                        element[2]--;
+                                        if(element[2]==0){
+                                            element[4]="D";
+                                        }
+                                    }
+
+                                    cords = toScreen(x,y-element[2]/20);
+                                }
+                            }
+                        }
+                        //drawXYrect(cords[0],cords[1],pixelSize,pixelSize,rgb(0,0,0));
+                        drawImageXYRotSize("qlockhitted",cords[0],cords[1],0,pixelSize,pixelSize);
+                    }else if(get(x,y)=="q"){
+                        var cords = toScreen(x,y);
+                        //drawXYrect(cords[0],cords[1],pixelSize,pixelSize,rgb(0,0,0));
+                        if(time/10>0.5) {
+                            drawImageXYRotSize("qlock0",cords[0],cords[1],0,pixelSize,pixelSize);
+                        }else{
+                            drawImageXYRotSize("qlock1",cords[0],cords[1],0,pixelSize,pixelSize);
+                        }
+                    }
+                }
+            }
+            var cords = toScreen(caracterx,caractery);
+            //drawXYrect(cords[0],cords[1],pixelSize,pixelSize,rgb(255,0,0));
+
+            if(dir == "d")drawImageXYRotSize("characterD",cords[0]+pixelSize/2,cords[1],0,pixelSize/1.5,pixelSize);
+            if(dir == "i")drawImageXYRotSize("characterI",cords[0]+pixelSize/2,cords[1],0,pixelSize/1.5,pixelSize);
+
+
+
+            setTimeout(() => {
+                tick();
+                time++;
+                time = time%10;
+            },10);
+        }
+        function charColisionIn(x,y) {
+            return  get(x+0.35,y)!=" " ||
+                    get(x+1,y)!=" " ||
+                    get(x+1,y+0.9)!=" " ||
+                    get(x+0.35,y+0.9)!=" "; 
+        }
+        function enemyColisionIn(x,y) {
+            return  get(x  ,y+0.1)!=" " ||
+                    get(x+1,y+0.1)!=" " ||
+                    get(x+1,y+1)!=" " ||
+                    get(x  ,y+1)!=" "; 
+        }
+        function toScreen(x,y){
+            return[(x+camarax)*pixelSize,(y+camaray)*pixelSize];
+        }
+        function distance(x1,y1,x2,y2){
+            return Math.sqrt(Math.pow(x1-x2,2)+Math.pow(y1-y2,2));        
+        }
+        function drawXYrect(x, y, w, h, color) {
+            if(color) 
+                ctx.fillStyle = color; 
+            else 
+                ctx.fillStyle = "#000000";
+            ctx.fillRect(x, y, w, h);
+        }
+        function rgb(r,g,b) {
+            var r_ = check(decToHex(r));
+            var g_ = check(decToHex(g));
+            var b_ = check(decToHex(b));
+            return "#"+r_+g_+b_;
+        }
+        function decToHex(n) {
+            if(n<0){
+                n = 0xFFFFFFFF + n + 1;
+            }
+            return Math.round(n).toString(16).toUpperCase();
+        }
+        function check(n){
+            //console.log(n)roun
+            if(n.length>2){
+                return "FF";
+            }else if (n.length<2){
+                return "0"+n;
+            }else return n
+        }
+        canvas.addEventListener('mousemove',function onMouseover(e){
+            ratonx = e.clientX;
+            ratony = e.clientY;
+        });
+        function get(x,y) {
+            if(map[Math.trunc(y)]){
+                //console.log(Math.round(x),Math.round(y),Array.from(map[Math.round(y)])[Math.round(x)]); 
+                //console.log(Math.round(y),map[Math.round(y)]);
+                return Array.from(map[Math.trunc(y)])[Math.trunc(x)];
+            } else return " ";
+        }
+        function drawImageXYRotSize(img,x,y,rot,w,h) {
+            var width = w;
+            var height = h;
+            //console.log(width,height,x,y);
+            ctx.translate(x, y);
+            ctx.rotate(rot);
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(document.getElementById(img), width / 2, height / 2, width, height);
+            ctx.rotate(-rot);
+            ctx.translate(-x, -y);
+        }
+        function set(x,y,s) {
+            var final = Array.from(map[Math.trunc(y)]);
+            final[Math.trunc(x)]=s;
+            map[Math.trunc(y)] = final.join('');
+            //console.log(map);            
+        }
+        tick();
+        </script>
+    </body>
+</html>
