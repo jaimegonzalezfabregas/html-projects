@@ -236,23 +236,7 @@
                 ratonx = e.clientX;
                 ratony = e.clientY;
             });
-            window.addEventListener('DOMMouseScroll', mouseWheelEvent);
-            window.addEventListener("wheel", mouseWheelEvent);
-            function mouseWheelEvent(e){
-                console.log(e.wheelDelta ? e.wheelDelta : -e.detail);
-                var movement = (e.wheelDelta ? e.wheelDelta : -e.detail)/120;
-                if(movement<0){
-                    ScrollUp();
-                }else{
-                    ScrollDown();
-                }
-            }
-            function ScrollUp(){
-                //UNUSED ;)
-            }
-            function ScrollDown(){
-                //UNSED ;)
-            }
+
             Array.prototype.copy = function(){
                 let ret = [];
                 for (let i = 0; i < this.length; i++) {
