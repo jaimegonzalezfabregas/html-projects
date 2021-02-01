@@ -61,16 +61,16 @@
                         }
                     }
                 }  
-                if(e.keyCode == 81){
+                if(e.keyCode == 81){ //q
                     //database = step(database);
                     if(checkItAll(database)){
                         
                         resolving = true;
                     }else alert("Miralo bien, hijo mio")
                 }
-                if(e.keyCode == 32){
-                    console.log(posibilidadesDe(hoverX,hoverY,database));
-                    console.log(hoverX,hoverY)
+                if(e.keyCode == 32){ // space
+                    console.log("posible values: ",posibilidadesDe(hoverX,hoverY,database));
+                    console.log("hovering: ",hoverX,hoverY)
                     
                 }
                 if (e.keyCode>=48&&e.keyCode<=57) {
