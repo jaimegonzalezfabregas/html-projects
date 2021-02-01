@@ -1,0 +1,263 @@
+<html>
+    <head>
+        <style>
+            canvas {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            body{
+                width: 100%;
+                height: 100%;
+                margin: 0px;
+                padding: 0px;
+            }
+            input{
+                width: 100%;
+            }
+        </style>
+    </head>
+    <body>  
+        <input type="text" id="input" oninput="refresh()"></input>
+        <p id="prediciones"></p>
+        <script src="./book.js"></script>
+        <script>
+            var ANYCHAR = "-";
+            var caracterMap = ["?","!",".",","," ","a","b","c","d","e","f","g","h","i","j","k","l","m","n","ñ","o","p","q","r","s","t","u","v","w","x","y","z"];
+            var patras = 10;
+            var progressJump = 10;
+            var ready = false;
+            var SpecificLeters = []
+
+
+            function normalizeInput(input){ // create an array of strings
+                let LowerCased = input.toLowerCase();
+                //console.log(LowerCased);
+                let ret = LowerCased.split("");
+                //console.log(ret);
+                for (let i = 0; i < ret.length; i++) {
+                    if(-1 == indexOf(ret[i])){
+                        ret[i] = " "
+                    }
+                    
+                }
+                let i = 1;
+                while (i<ret.length) {
+                    if(i%(Math.floor(ret.length/100)*progressJump)==0)console.log(Math.floor(i*100/ret.length) + "%")
+                    if(ret[i-1] == " " && ret[i] == " "){
+                        ret.splice(i,1);
+                    }
+                    else{
+                        i++;
+                    }
+                }
+                //console.log(ret);
+                return ret;
+                
+            }
+
+            var data = [];
+            var inputarr = [];
+
+            function refresh() {
+                if(ready){
+                    var lookAhead = 30;
+                    var input = document.getElementById("input").value;
+                    console.log("input: " + input);
+                    let fullText = predict(lookAhead,input);
+
+                    let oldText = input.substring(0,input.length-patras)
+                    let predictText = input.substring(input.length-patras,input.length+1)
+                    let predictedText = fullText.substring(input.length, fullText.length-1)
+
+                    let output = oldText + "<u>" + predictText + "</u>" +predictedText;
+                    document.getElementById("prediciones").innerHTML = output;
+
+
+
+                }else document.getElementById("prediciones").innerHTML = "preparing..."
+
+            }
+
+            function recalculate() {
+                ready = false;
+                refresh();
+                setTimeout(() => {
+                    recalculateContinue();
+                }, 1);
+            }
+
+            function recalculateContinue() {
+                console.log("Preparando input")
+                inputarr = normalizeInput(input); //"hola wenas tardes por las manianas"// 
+                console.log("analizando")
+                analisis();
+                console.log("Ya he analizado, iniciando prediciones");
+                //console.log(predict(200," and it was the"));
+                ready = true;
+                refresh();
+            }
+
+
+
+            function predict(iterations,seed) {
+                var ret = seed;
+                for (let i = 0; i < iterations; i++) {
+                    if(i%(Math.floor(iterations/100)*progressJump)==0)console.log(i*100/iterations + "%")
+                    retarr = ret.split("");
+                    let clue = [];
+                    for (let j = 0; j < patras; j++) {
+                        if(retarr[j+retarr.length-patras])clue.push(retarr[j+retarr.length-patras])
+                        else clue.push(ANYCHAR);
+                    }
+                    ret = ret + nextLeter(clue);
+                }
+                return ret;
+            }
+            function SetUpData() { // set everything to 0
+                let lastElm = caracterMap[caracterMap.length-1]
+                let lastClue = [];
+                for (let i = 0; i < patras; i++) {
+                    lastClue.push(lastElm)
+                }
+                let lastElmIndex = locationOf(lastClue);
+                for (let i = 0; i < lastElmIndex+1; i++) {
+
+                    if(i%(Math.floor(lastElmIndex/100)*5)==0)console.log(Math.floor(i*100/lastElmIndex) + "%")
+
+                    var wip = [];
+                    for (let j = 0; j < indexOf(lastElm)+1; j++) { 
+                        wip.push(0);
+                    }
+                    data.push(wip);
+                }
+                console.log(clone(data));
+            }
+            function analisis() {
+                for (let i = patras; i < inputarr.length; i++) {
+                    if(i % (Math.floor(inputarr.length/100)*progressJump)== 0) console.log(Math.floor(i*100/inputarr.length) + "%")
+                    var clue = [];
+                    for (let j = 0; j < patras; j++) {
+                        clue.push(inputarr[i-patras+j])
+                    }
+                    if(false){//Math.random() < 0.01){ 
+                        console.log("found " + clue + " followed by: " +inputarr[i]);
+                        console.log(locationOf(clue),indexOf(inputarr[i]))
+                    }
+                    if(!data[locationOf(clue)]) data[locationOf(clue)] = [];
+                    if(!data[locationOf(clue)][indexOf(inputarr[i])] ) data[locationOf(clue)][indexOf(inputarr[i])] = 0;
+                    data[locationOf(clue)][indexOf(inputarr[i])] += 1;
+                }
+            }
+            function getPosibleCompleteClues(unclompletedclue) {
+                //console.log(unclompletedclue);
+                if(searchCharInCharArr(ANYCHAR,unclompletedclue)){
+                    let ret = [];
+                    let variatingPos = 0;
+                    let rep = true;
+                    while (rep) {
+                        if(unclompletedclue[variatingPos] == ANYCHAR){
+                            rep = false;
+                        }else
+                        variatingPos++;
+                    }
+                    //console.log("variating pos " + variatingPos);
+                    
+                    for (let i = 0; i < SpecificLeters.length; i++) {
+                        let arg = clone(unclompletedclue);
+                        arg[variatingPos] = SpecificLeters[i];
+                        //console.log(arg);
+                        completed = getPosibleCompleteClues(arg)
+                        for (let j = 0; j < completed.length; j++) {
+                            ret.push(completed[j]);
+                        }
+                    }
+                    //console.log(ret);
+                    return ret;
+                    
+                }else{
+                    return [unclompletedclue]
+                } 
+            }
+            function searchCharInCharArr(s,arr){
+                let i=0;
+                while(i < arr.length){
+                    if(s==arr[i]) return true
+                    i++;
+                }
+                return false;
+            }
+            function getRuleta(clue) {
+                let ruleta = [];
+                let clues = getPosibleCompleteClues(clue)
+                //console.log(clues);
+                for (let clueN = 0; clueN < clues.length; clueN++) {
+                    const element = clues[clueN];
+                    //console.log(element)
+                    probabilityMap = data[locationOf(element)];
+                    if(probabilityMap)
+                    for (let i = 0; i < probabilityMap.length; i++) {
+                        if(probabilityMap[i]){
+                            for (let loop = 0; loop < probabilityMap[i]; loop++) {
+                                ruleta.push(caracterMap[i])
+                            }
+                        }       
+                    }
+                }
+                //console.log("ruleta para "+clue+" :" +ruleta);
+                return ruleta
+            }
+            function nextLeter(clue){
+                let ruleta = getRuleta(clue);
+                
+                //console.log(clue,locationOf(clue));
+                //console.log(probabilityMap);
+                
+                if(ruleta.length == 0) return "#"//caracterMap[Math.floor(Math.random()*caracterMap.length)]
+                
+                return ruleta[Math.floor(Math.random()*ruleta.length)]
+            }
+            function indexOf(s) {
+                for (let i = 0; i < caracterMap.length; i++) {
+                    if(s==caracterMap[i]){
+                        return i;
+                    }
+                }
+                return -1;
+            }
+            function locationOf(clue){
+                let signicatividad = caracterMap.length
+                let ret = 0;
+
+                for (let i = 0; i < clue.length; i++) {
+                    ret += indexOf(clue[i])*Math.pow(signicatividad,i);
+                    if(indexOf(clue[i]) == -1)return 0;
+                }
+                
+                return ret;
+            }
+            function clone(subjet){
+                if(Array.isArray(subjet)){
+                    var ret = []
+                    for (let i = 0; i < subjet.length; i++) {
+                        const element = subjet[i];
+                        ret.push(clone(element));
+                    }
+                    return ret;
+                }else{
+                    return subjet;
+                }
+            }
+            document.getElementById("input").value = ""
+            console.log("START")
+            setTimeout(() => {
+                recalculate();
+            }, 1);
+
+
+        </script>
+    </body>
+</html>
+
+
