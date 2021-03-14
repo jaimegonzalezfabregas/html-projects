@@ -1,0 +1,212 @@
+<html>
+
+<head>
+    <style>
+        @font-face {
+            font-family: monospace_Custom;
+            src: url(joystix.monospace.ttf);
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+            padding: 0px;
+        }
+
+        #hola {
+            font-family: monospace_Custom !important;
+            line-height: 0px;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas" width="1920" height="1080" style="display: none;"></canvas>
+    <canvas id="display"></canvas>
+
+    <div class="video-wrap">
+        <video id="video" playsinline autoplay style="display: none;"></video>
+    </div>
+
+    <div class="controller">
+        <button id="snap">Capture</button>
+        <button id="colorMode">colorMode</button>
+    </div>
+
+    <script>
+        var keys = [];
+        var ratony = 0;
+        var ratonx = 0;
+        window.onkeyup = function (e) { keys[e.keyCode] = false; }
+        window.onkeydown = function (e) { keys[e.keyCode] = true; }
+
+
+
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const display = document.getElementById('display');
+
+        const colorMode = document.getElementById("colorMode")
+
+        var ctx = canvas.getContext("2d");
+        var ctxDispl = display.getContext("2d");
+
+        const snap = document.getElementById("snap");
+
+        const constraints = {
+            audio: false,
+            video: {
+                width: 1280, height: 720
+            }
+        };
+
+        // Access webcam
+        async function init() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                handleSuccess(stream);
+            } catch (e) {
+            }
+        }
+
+        // Success
+        function handleSuccess(stream) {
+            window.stream = stream;
+            video.srcObject = stream;
+        }
+
+        // Load init
+        init();
+
+        // Draw image
+        var context = canvas.getContext('2d');
+
+        let record = true;
+        let colorSupport = false;
+        snap.addEventListener("click", function () {
+            record = !record
+        });
+        colorMode.addEventListener("click", function () {
+            colorSupport = !colorSupport
+        });
+
+        const BrightnessToAscci = "@Wm<+=|i~-:· "//"#XA€GñZPS9UTe6µOyx¾f45&a©YVL±C@nsuzJ%tocrjv1l=<i7[¿×*{+(»|¯—^”~–‹;:’˜ˆ· "
+        const charHeight = 20;
+        const charWidth = 10;
+        const rescale = 10;
+        const pixelation = 10
+
+
+        setInterval(() => {
+            if (record) {
+
+                ctxDispl.font = rescale + 2 + 'px monospace_Custom';
+                display.height = video.videoHeight / pixelation * rescale
+                display.width = video.videoWidth / pixelation * rescale
+                ctxDispl.fillStyle = rgb(0, 0, 0)
+                ctxDispl.fillRect(0, 0, display.width, display.height)
+                ctxDispl.fillStyle = rgb(255, 255, 255)
+
+
+                canvas.height = video.videoHeight / pixelation
+                canvas.width = video.videoWidth / pixelation
+                context.drawImage(video, 0, 0, video.videoWidth / pixelation, video.videoHeight / pixelation);
+
+                let colArr = context.getImageData(0, 0, video.videoWidth / pixelation, video.videoHeight / pixelation).data
+
+                let lasty = 0;
+
+                for (let i = 0; i < colArr.length / 4; i++) {
+                    let Brightness = 1 - (colArr[i * 4] + colArr[i * 4 + 1] + colArr[i * 4 + 2]) / 3 / 255
+
+                    normalizeFactor = Math.sqrt(colArr[i * 4] / 255 * colArr[i * 4] / 255 + colArr[i * 4 + 1] / 255 * colArr[i * 4 + 1] / 255 + colArr[i * 4 + 2] / 255 * colArr[i * 4 + 2] / 255)
+
+
+                    Brightness = Math.max(Math.min(Brightness, 1), 0)
+
+
+                    let char = BrightnessToAscci[Math.floor(Brightness * (BrightnessToAscci.length - 1))];
+
+                    let y = Math.floor(i / (video.videoWidth / pixelation))
+
+                    //drawXYrect(Math.floor(i % (video.videoWidth / pixelation)) * rescale, y * rescale, rescale, rgb(Brightness * 255, Brightness * 255, Brightness * 255))
+                    if (colorSupport) {
+                        let color = rgb(colArr[i * 4] / normalizeFactor, colArr[i * 4 + 1] / normalizeFactor, colArr[i * 4 + 2] / normalizeFactor)
+                        if (ctxDispl.fillStyle != color)
+                            ctxDispl.fillStyle = color
+                    }
+
+
+                    ctxDispl.fillText(char, Math.floor(i % (video.videoWidth / pixelation)) * rescale, y * rescale)
+
+                }
+            }
+
+        }, 10);
+
+        function drawXYrect(x, y, grosor, color) {
+            //console.log("fufo?")
+            if (color)
+                ctx.fillStyle = color;
+            else
+                ctx.fillStyle = "#555555";
+            ctx.fillRect(x, y, grosor, grosor);
+        }
+        function rgb(r, g, b) {
+            var r_ = check(decToHex(r));
+            var g_ = check(decToHex(g));
+            var b_ = check(decToHex(b));
+            return "#" + r_ + g_ + b_;
+        }
+
+        function decToHex(n) {
+            if (n < 0) {
+                n = 0xFFFFFFFF + n + 1;
+            }
+            return Math.round(n).toString(16).toUpperCase();
+        }
+
+        function check(n) {
+            //console.log(n)
+            if (n.length > 2) {
+                return "FF";
+            } else if (n.length < 2) {
+                return "0" + n;
+
+            } else return n
+        }
+
+        canvas.addEventListener('mousemove', function onMouseover(e) {
+            ratonx = e.clientX;
+            ratony = e.clientY;
+        });
+
+        window.addEventListener('DOMMouseScroll', mouseWheelEvent);
+        window.addEventListener("wheel", mouseWheelEvent);
+        function mouseWheelEvent(e) {
+            var movement = (e.wheelDelta ? e.wheelDelta : -e.detail) / 120;
+            if (movement < 0) {
+                ScrollUp();
+            } else {
+                ScrollDown();
+            }
+        }
+
+        function ScrollUp() {
+
+        }
+        function ScrollDown() {
+
+        }
+    </script>
+</body>
+
+</html>
