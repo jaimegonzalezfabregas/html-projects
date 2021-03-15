@@ -1,0 +1,243 @@
+<html>
+
+<head>
+    <style>
+        canvas {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+            padding: 0px;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="walls" width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
+
+    <div id="layerList">
+        <canvas width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
+        <canvas width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
+        <canvas width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
+        <canvas width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
+        <canvas width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
+        <canvas width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
+        <canvas width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
+        <canvas width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
+        <canvas width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
+
+
+
+    </div>
+    <canvas id="bg" width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
+
+
+    <script>
+        var keys = [];
+        var ratony = 0;
+        var ratonx = 0;
+        window.onkeyup = function (e) { keys[e.keyCode] = false; }
+        window.onkeydown = function (e) { keys[e.keyCode] = true; }
+
+        var obstacles = []
+        const lightSize = 10;
+        MainLight = [0, 0]
+
+        function rerender() {
+            console.log("start render")
+
+            let layers = document.getElementById("layerList").children;
+            for (let i = 0; i < layers.length; i++) {
+
+
+                let d = i / layers.length * lightSize
+                //console.log(MainLight,light)
+
+                let canvas = layers[i]
+                canvas.style.opacity = "" + 1 / layers.length
+
+
+                let ctx = canvas.getContext("2d");
+
+                canvas.height = canvas.clientHeight
+                canvas.width = canvas.clientWidth
+                // render background
+                //console.log(light)
+                var grd = ctx.createRadialGradient(MainLight[0], MainLight[1], 0, MainLight[0], MainLight[1], 1000);
+                grd.addColorStop(0, "rgba(0,0,0,0)");
+                grd.addColorStop(1, "black");
+
+                ctx.fillStyle = rgb(255, 255, 255)
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // render sadows
+
+                for (let o = 0; o < obstacles.length; o++) {
+                    const obstacle = obstacles[o];
+                    for (let wall = 0; wall < obstacle.length; wall++) {
+                        const w = obstacle[wall];
+
+                        let wallCenter = [(w[0][0] + w[1][0]) / 2, (w[0][1] + w[1][1]) / 2]
+
+                        let vectorToWall = normalize([wallCenter[0] - MainLight[0], wallCenter[1] - MainLight[1]], d)
+                        let light = [MainLight[0] + vectorToWall[0], MainLight[1] + vectorToWall[1]]
+
+                        let shadowPoligon = []
+                        shadowPoligon.push(w[0])
+                        shadowPoligon.push(w[1])
+
+                        // project w[1]
+                        let vec1 = [light[0] - w[1][0], light[1] - w[1][1]]
+                        vec1 = normalize(vec1, Math.max(canvas.height, canvas.width))
+                        //console.log("vec1", w[1][0], vec1[0], w[1][1], vec1[1])
+                        shadowPoligon.push([w[1][0] - vec1[0], w[1][1] - vec1[1]])
+
+                        // project w[0]
+                        let vec0 = [light[0] - w[0][0], light[1] - w[0][1]]
+                        vec0 = normalize(vec0, Math.max(canvas.height, canvas.width))
+                        shadowPoligon.push([w[0][0] - vec0[0], w[0][1] - vec0[1]])
+
+                        //console.log("shadow polinome", shadowPoligon)
+
+                        drawPoligon(shadowPoligon, rgb(0, 0, 0), ctx)
+                    }
+                }
+
+
+            }
+
+            let bg = document.getElementById("bg")
+            let bgCtx = bg.getContext("2d")
+
+            bg.height = bg.clientHeight
+            bg.width = bg.clientWidth
+
+            var grd = bgCtx.createRadialGradient(MainLight[0], MainLight[1], 0, MainLight[0], MainLight[1], 1000);
+            grd.addColorStop(0, "rgba(0,0,0,0)");
+            grd.addColorStop(1, "black");
+
+            bgCtx.fillStyle = grd
+            bgCtx.fillRect(0, 0, bg.width, bg.height);
+
+
+
+            let canvas = document.getElementById("walls")
+            let ctx = canvas.getContext("2d");
+
+            canvas.height = canvas.clientHeight
+            canvas.width = canvas.clientWidth
+
+            // render walls
+
+            for (let o = 0; o < obstacles.length; o++) {
+                const obstacle = obstacles[o];
+                let vertexes = [];
+                for (let wall = 0; wall < obstacle.length; wall++) {
+                    const w = obstacle[wall];
+                    vertexes.push(w[0])
+                }
+                drawPoligon(vertexes, rgb(0, 0, 0), ctx)
+            }
+        }
+
+        function normalize(vec, b) {
+            let a = Math.sqrt(vec[0] * vec[0] + vec[1] * vec[1]) / b
+            return [vec[0] / a, vec[1] / a]
+        }
+
+        function start() {
+            createObstacle([[100, 100], [200, 100], [200, 200], [100, 200]])
+            createObstacle([[300, 300], [200, 300], [200, 200], [300, 200]])
+
+            //console.log(obstacles)
+            rerender()
+        }
+
+        document.onmousemove = () => {
+            MainLight = [ratonx, ratony]
+            rerender()
+        }
+
+        function createObstacle(points) {
+            let obstacle = []
+            for (let p = 0; p < points.length; p++) {
+                obstacle.push([points[p], points[(p + 1) % points.length]])
+            }
+            obstacles.push(obstacle)
+        }
+
+        function drawPoligon(vertex, color, ctx) {
+            if (color)
+                ctx.fillStyle = color;
+            else
+                ctx.fillStyle = "#555555";
+
+            ctx.beginPath();
+            ctx.moveTo(vertex[0][0], vertex[0][1]);
+            for (let v = 0; v < vertex.length; v++) {
+                const p = vertex[v];
+                ctx.lineTo(p[0], p[1]);
+                //console.log(p[0], p[1])
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function rgb(r, g, b) {
+            var r_ = check(decToHex(r));
+            var g_ = check(decToHex(g));
+            var b_ = check(decToHex(b));
+            return "#" + r_ + g_ + b_;
+        }
+
+        function decToHex(n) {
+            if (n < 0) {
+                n = 0xFFFFFFFF + n + 1;
+            }
+            return Math.round(n).toString(16).toUpperCase();
+        }
+
+        function check(n) {
+            //console.log(n)
+            if (n.length > 2) {
+                return "FF";
+            } else if (n.length < 2) {
+                return "0" + n;
+
+            } else return n
+        }
+
+        document.addEventListener('mousemove', function onMouseover(e) {
+            ratonx = e.clientX;
+            ratony = e.clientY;
+        });
+
+        window.addEventListener('DOMMouseScroll', mouseWheelEvent);
+        window.addEventListener("wheel", mouseWheelEvent);
+        function mouseWheelEvent(e) {
+            //console.log(e.wheelDelta ? e.wheelDelta : -e.detail);
+            var movement = (e.wheelDelta ? e.wheelDelta : -e.detail) / 120;
+            if (movement < 0) {
+                ScrollUp();
+            } else {
+                ScrollDown();
+            }
+        }
+
+        function ScrollUp() {
+
+        }
+        function ScrollDown() {
+
+        }
+        start();
+    </script>
+</body>
+
+</html>
