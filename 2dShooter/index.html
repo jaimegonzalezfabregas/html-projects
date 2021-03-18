@@ -56,7 +56,8 @@
             //s - 83
             //d - 68
             let nextLast = [player[0], player[1]]
-            let v = [(player[0] - playerLast[0] - (keys[65] - keys[68]) * acceleration) * friction, (player[1] - playerLast[1] - (keys[87] - keys[83]) * acceleration) * friction]
+            let shifting = keys[16] * -0.2
+            let v = [(player[0] - playerLast[0] - (keys[65] - keys[68]) * acceleration) * (friction + shifting), (player[1] - playerLast[1] - (keys[87] - keys[83]) * acceleration) * (friction+shifting)]
             player = [player[0] + v[0], player[1] + v[1]]
 
             for (let w = 0; w < walls.length; w++) {
@@ -70,7 +71,7 @@
                     let wallCenter = [(wall[0][0] + wall[1][0]) / 2, (wall[0][1] + wall[1][1]) / 2]
                     let vecToWall = [wallCenter[0] - player[0], wallCenter[1] - player[1]]
 
-                    let normal = normalize([-wallVec[1], wallVec[0]], (hitBoxSize - d) / 2)
+                    let normal = normalize([-wallVec[1], wallVec[0]], (hitBoxSize - d))
                     console.log(wall)
 
                     normal = reorientVecToFaceVec(normal, vecToWall, true)
@@ -158,7 +159,7 @@
         }
 
         function start() {
-            let map = createMap()
+            let map = createMap(100,100)
             //console.log(obstacles)
 
             for (let y = 1; y < map.length - 1; y++) {
@@ -233,25 +234,40 @@
             return walls
         }
 
-        const cornerLeniency = 1.1
+        const cornerLeniency = 0.9
 
         function distanceToWall(p1, p2, s) {
-            let a = l([p1, p2])
-            let b = l([p2, s])
-            let c = l([s, p1])
-            if (b * cornerLeniency < hitBoxSize) {
-                return a
-            }
-            if (c * cornerLeniency < hitBoxSize) {
-                return c
-            }
-            if (b > a || c > a) {
-                return hitBoxSize * 2
-            }
-            let area = 0.25 * Math.sqrt(((a + b + c) * (-a + b + c) * (a - b + c) * (a + b - c)))
-            // area = 1/2 * h * a ; h = area * 2 / a
-            //console.log(p1,p2,s)
-            return area * 2 / a
+            return Math.sqrt(distToSegmentSquared(s, p1, p2))
+
+            // euristic
+
+            // let a = l([p1, p2])
+            // let b = l([p2, s])
+            // let c = l([s, p1])
+            // let area = 0.25 * Math.sqrt(((a + b + c) * (-a + b + c) * (a - b + c) * (a + b - c)))
+            // // area = 1/2 * h * a ; h = area * 2 / a
+            // //console.log(p1,p2,s)
+            // let ret = area * 2 / a
+
+            // if (b * cornerLeniency < hitBoxSize) {
+            //     return a
+            // }
+            // if (c * cornerLeniency < hitBoxSize) {
+            //     return c
+            // }
+            // if (b > a || c > a) {
+            //     return hitBoxSize * 2
+            // }
+
+
+            // return ret;
+        }
+
+        function distToSegmentSquared(p, v, w) {
+            let l2 = l([w, v]) * l([w, v]);
+            let t = ((p[0] - v[0]) * (w[0] - v[0]) + (p[1] - v[1]) * (w[1] - v[1])) / l2;
+            t = Math.max(0, Math.min(1, t));
+            return Math.pow(l([p, [v[0] + t * (w[0] - v[0]), v[1] + t * (w[1] - v[1])]]), 2);
         }
 
         function l(w) {
@@ -276,7 +292,7 @@
         // }
 
         function createMap(w, h) {
-            let Rooms = [] // [cornerPos, size]
+            // [cornerPos, size]
 
             return [
                 "############",
@@ -305,9 +321,12 @@
             for (let v = 0; v < vertex.length; v++) {
                 const p = vertex[v];
                 ctx.lineTo(p[0] + xOff, p[1] + yOff);
+
                 //console.log(p[0], p[1])
             }
             ctx.closePath();
+            ctx.stroke();
+
             ctx.fill();
         }
 
