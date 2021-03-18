@@ -2,7 +2,7 @@
 
 <head>
     <style>
-        canvas {
+        fullscreen {
             width: 100%;
             height: 100%;
             margin: 0;
@@ -19,11 +19,14 @@
 </head>
 
 <body>
+    <div id="login" class="fullscreen">
 
-    <canvas id="shadow" width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
-
-    <canvas id="bg" width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
-
+    </div>
+    <div id="gameplay" class="fullscreen">
+        <canvas class="fullscreen" id="shadow" width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
+        <canvas class="fullscreen" id="bg" width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
+    </div>
+    
 
     <script>
         let keys = [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false];
@@ -38,10 +41,10 @@
         let maxV = 10;
         let acceleration = 10;
         let friction = 0.7;
-        let worldSize = 140;
+        let worldSize = 100;
         let player = [2 * worldSize, 2 * worldSize];
         let playerLast = player;
-        let hitBoxSize = 100;
+        let hitBoxSize = 50;
 
         function reorientVecToFaceVec(vec, gide, reverse) {
             let m = vec[0] * gide[0] < 0 || vec[1] * gide[1] < 0 ? -1 : 1
@@ -57,7 +60,7 @@
             //d - 68
             let nextLast = [player[0], player[1]]
             let shifting = keys[16] * -0.2
-            let v = [(player[0] - playerLast[0] - (keys[65] - keys[68]) * acceleration) * (friction + shifting), (player[1] - playerLast[1] - (keys[87] - keys[83]) * acceleration) * (friction+shifting)]
+            let v = [(player[0] - playerLast[0] - (keys[65] - keys[68]) * acceleration) * (friction + shifting), (player[1] - playerLast[1] - (keys[87] - keys[83]) * acceleration) * (friction + shifting)]
             player = [player[0] + v[0], player[1] + v[1]]
 
             for (let w = 0; w < walls.length; w++) {
@@ -159,7 +162,7 @@
         }
 
         function start() {
-            let map = createMap(100,100)
+            let map = createMap(100, 100)
             //console.log(obstacles)
 
             for (let y = 1; y < map.length - 1; y++) {
@@ -295,13 +298,13 @@
             // [cornerPos, size]
 
             return [
-                "############",
-                "#          #",
-                "#      #####",
-                "#####  #####",
-                "#####      #",
-                "#          #",
-                "############",
+                "#######################",
+                "#                     #",
+                "#                     #",
+                "#####  ##########     #",
+                "#   #   #  #    #     #",
+                "#          #          #",
+                "#######################",
             ]
 
         }
