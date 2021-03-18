@@ -137,7 +137,7 @@ function getNextMatrix(range, matrix) {
     return inflate(flat)
 }
 
-let testMatrix = inflate([0, 0, 0, 0, 0, 0, 0, 0, 0])
+let testMatrix = inflate([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 let progres = 0;
 let range = [-1, 1]
 while (true) {
@@ -152,7 +152,7 @@ while (true) {
             //console.log("hi:", testMatrix)
         }
     } else {
-        testMatrix = inflate([0, 0, 0, 0, 0, 0, 0, 0, 0])
+        testMatrix = inflate([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         range[0]--
         range[1]++
         progres = 0;
