@@ -34,31 +34,55 @@
 
         let walls = []
         const lightSize = 10;
-        let playerv = [0, 0];
+
         let maxV = 10;
         let acceleration = 10;
         let friction = 0.7;
-        let worldSize = 100;
-        let player = [200, 200];
-        let hitBoxSize = 10;
+        let worldSize = 140;
+        let player = [2 * worldSize, 2 * worldSize];
+        let playerLast = player;
+        let hitBoxSize = 100;
+
+        function reorientVecToFaceVec(vec, gide, reverse) {
+            let m = vec[0] * gide[0] < 0 || vec[1] * gide[1] < 0 ? -1 : 1
+            m = (reverse ? -1 : 1) * m
+            vec = [vec[0] * m, vec[1] * m]
+            return vec;
+        }
 
         function tick() {
             //w - 87
             //a - 65
             //s - 83
             //d - 68
-            playerv = [(playerv[0] - (keys[65] - keys[68]) * acceleration) * friction, (playerv[1] - (keys[87] - keys[83]) * acceleration) * friction]
-            player = [player[0] + playerv[0], player[1] + playerv[1]]
+            let nextLast = [player[0], player[1]]
+            let v = [(player[0] - playerLast[0] - (keys[65] - keys[68]) * acceleration) * friction, (player[1] - playerLast[1] - (keys[87] - keys[83]) * acceleration) * friction]
+            player = [player[0] + v[0], player[1] + v[1]]
 
             for (let w = 0; w < walls.length; w++) {
                 const wall = walls[w];
-                console.log(distanceToWall(wall[0], wall[1], player))
-                if (distanceToWall(wall[0], wall[1], player) < hitBoxSize) {
-                    playerv = [-playerv[0], -playerv[1]]
-                    player = [player[0] + playerv[0], player[1] + playerv[1]]
+                //console.log(distanceToWall(wall[0], wall[1], player))
+                let d = distanceToWall(wall[0], wall[1], player)
+                if (d < hitBoxSize) {
+
+                    let wallVec = [wall[0][0] - wall[1][0], wall[0][1] - wall[1][1]]
+
+                    let wallCenter = [(wall[0][0] + wall[1][0]) / 2, (wall[0][1] + wall[1][1]) / 2]
+                    let vecToWall = [wallCenter[0] - player[0], wallCenter[1] - player[1]]
+
+                    let normal = normalize([-wallVec[1], wallVec[0]], (hitBoxSize - d) / 2)
+                    console.log(wall)
+
+                    normal = reorientVecToFaceVec(normal, vecToWall, true)
+
+                    player = [player[0] + normal[0], player[1] + normal[1]]
+
                 }
 
             }
+
+            playerLast = nextLast;
+
 
             //console.log(player)
 
@@ -209,10 +233,21 @@
             return walls
         }
 
+        const cornerLeniency = 1.1
+
         function distanceToWall(p1, p2, s) {
             let a = l([p1, p2])
             let b = l([p2, s])
             let c = l([s, p1])
+            if (b * cornerLeniency < hitBoxSize) {
+                return a
+            }
+            if (c * cornerLeniency < hitBoxSize) {
+                return c
+            }
+            if (b > a || c > a) {
+                return hitBoxSize * 2
+            }
             let area = 0.25 * Math.sqrt(((a + b + c) * (-a + b + c) * (a - b + c) * (a + b - c)))
             // area = 1/2 * h * a ; h = area * 2 / a
             //console.log(p1,p2,s)
@@ -246,9 +281,9 @@
             return [
                 "############",
                 "#          #",
-                "#          #",
+                "#      #####",
                 "#####  #####",
-                "#          #",
+                "#####      #",
                 "#          #",
                 "############",
             ]
