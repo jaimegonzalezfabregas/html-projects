@@ -28,6 +28,8 @@ function reorientVecToFaceVec(vec, gide, reverse) {
 let viewAngle = 0;
 let mouseAngle = 0;
 
+let camOfsetVec
+
 function getVecFromAngle(a) {
     return [Math.cos(a), Math.sin(a)]
 }
