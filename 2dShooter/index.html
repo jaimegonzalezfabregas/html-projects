@@ -2,7 +2,7 @@
 
 <head>
     <style>
-        fullscreen {
+        canvas {
             width: 100%;
             height: 100%;
             margin: 0;
@@ -15,29 +15,39 @@
             margin: 0px;
             padding: 0px;
         }
+
+        fullscreen {
+            margin: auto;
+        }
     </style>
 </head>
 
 <body>
-    <div id="loading" class = "fullscreen" style="display: block;"></div>
+
+    <div id="loading" class="fullscreen" style="display: block;visibility:visible;position: fixed;">
+        please wait...
+
+    </div>
     <div id="login" class="fullscreen" style="display: none;">
         <input type="text" id="playerName" placeholder="nick"> </input>
-        <select id="team" name="pick a team">
-
-        </select>
+        <select id="team" name="pick a team"></select>
+        <button onclick="logIn()"> Log in </button>
     </div>
     <div id="gameplay" class="fullscreen" style="display: none;">
+
+        <canvas class="fullscreen" id="bg" width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
         <canvas class="fullscreen" id="shadow" width="1920" height="1080"
             style="position: fixed; top: 0; left:0;"></canvas>
-        <canvas class="fullscreen" id="bg" width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
     </div>
 
+    <image src="file?dir=floor.jpg" style="display: none;" id="floorTile"></image>
+    <image src="file?dir=spritesheetWalking.png" style="display: none;" id="player"></image>
 
     <script src="file?dir=gameplay.js"></script>
     <script src="file?dir=login.js"></script>
     <script src="file?dir=utils.js"></script>
     <script>
-        start();
+        //start();
     </script>
 </body>
 
