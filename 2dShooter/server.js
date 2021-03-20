@@ -2,10 +2,12 @@ var fs = require('fs');
 var url = require('url');
 var http = require('http');
 
+http.globalAgent.keepAlive = true;
+
 let server = http.createServer(function (req, res) {
     let directions = url.parse(req.url, true)
 
-    console.log("called", directions.href, "query", directions.query, "pathname", directions.pathname)
+    //console.log("called", directions.href)//, "query", directions.query, "pathname", directions.pathname)
 
     if (directions.pathname == "/file") {
         console.log("file querry")
@@ -29,22 +31,36 @@ let server = http.createServer(function (req, res) {
     }
 
     if (directions.pathname == "/AJAX") {
-        console.log("it is an ajax")
         if (directions.query.queryPurpose == "getData") {
             console.log("returning gameData")
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.write(JSON.stringify({ "map": map, "teams": teams }));
             return res.end();
         }
-        if (directions.query.queryPurpose == "signIn") {
+        if (directions.query.queryPurpose == "logOut") {
+            console.log("loggin out someone")
+
+            teams[users[directions.query.name].team].playerNum--
+            delete users[directions.query.name]
+
+            console.log(teams, users)
+        }
+        if (directions.query.queryPurpose == "startGame") {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.write(gameStart);
+            return res.end();
+            
+        }
+        if (directions.query.queryPurpose == "logIn") {
+            console.log("loggin in someone")
             let success = "OK";
             if (directions.query.name in users) {
                 success = "taken name"
-            } else if (teams[directions.query.team].playerNum >= maxPlayersPerTeam) {
+            } else if (teams[directions.query.team].playerNum < maxPlayersPerTeam) {
                 teams[directions.query.team].playerNum++
-                users[directions.query.name] = { 
-                    "pos": teams[directions.query.team].initialPos, 
-                    "health": 1, 
+                users[directions.query.name] = {
+                    "pos": teams[directions.query.team].initialPos,
+                    "health": 1,
                     "team": directions.query.team
                 }
 
@@ -54,11 +70,19 @@ let server = http.createServer(function (req, res) {
 
             res.writeHead(200, { 'Content-Type': 'text/plain' });
             res.write(success);
+            console.log(teams, users)
+            gameStart = "true"
+            for (let team in teams) {
+                if (teams[team].playerNum < maxPlayersPerTeam) {
+                    gameStart = "false";
+                }
+            }
+
             return res.end();
         }
         if (directions.query.queryPurpose == "refresh") {
 
-            users[directions.query.name].pos = directions.query.pos
+            users[directions.query.name].pos = JSON.parse(directions.query.pos).a
 
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.write(JSON.stringify(users));
@@ -80,27 +104,31 @@ let server = http.createServer(function (req, res) {
 });
 server.listen(8000);
 
-let NextId = 0;
+let gameStart = "false";
 
 let users = {}
 let teams = {
-    "a": {
+    "Team1": {
         "playerNum": 0,
-        "initialPos": [1, 1]
+        "initialPos": [200, 200]
     },
-    "b": {
-        "playerNum": 0,
-        "initialPos": [4, 4]
-    },
+    // "Team2": {
+    //     "playerNum": 0,
+    //     "initialPos": [200, 300]
+    // }
 }
-let maxPlayersPerTeam = 6;
+let maxPlayersPerTeam = 1;
 
 let map = [
     "#######################",
     "#      #              #",
+    "#      #              #",
+    "#               #     #",
     "#               #     #",
     "#####  ##########     #",
     "#   #   #  #    #     #",
+    "#   #   #  #    #     #",
+    "#          #          #",
     "#          #          #",
     "#######################",
 ]
