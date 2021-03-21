@@ -9,8 +9,11 @@ const lightSize = 10;
 
 let mapSize;
 
+let players = {};
+let playersToDraw = -1;
+
 let maxV = 10;
-let acceleration = 10;
+let acceleration = 5;
 let friction = 0.7;
 let worldSize = 100;
 let player
@@ -43,16 +46,29 @@ function getAngleFromVec(v) {
 let AcumulatedCamOfset = [0, 0]
 let ongoingEvents = {}
 
+let nextAudio = 0;
+
 function tick() {
 
-    for(let ev in events){
+    //console.log(ongoingEvents)
+
+    for (let ev in events) {
         doneEvents.push(ev);
-        ongoingEvents[ev] = {"frame":0, "data":events[ev]}
+        ongoingEvents[ev] = { "frame": -1, "data": events[ev] }
+        let n = document.getElementById("shootAudio" + nextAudio);
+        nextAudio = nextAudio % 4 + 1
+        n.volume = min(1, 100 / l([player, events[ev].shooterPos]))
+        console.log(n.volume)
+
+        n.pause();
+        n.currentTime = 0;
+        n.play();
+
     }
 
     for (let ev in ongoingEvents) {
-        ongoingEvents[ev].frame ++
-        if (ongoingEvents[ev].frame > 14){
+        ongoingEvents[ev].frame++
+        if (ongoingEvents[ev].frame > 14) {
             delete ongoingEvents[ev]
         }
     }
@@ -76,7 +92,7 @@ function tick() {
 
     const turnSpeed = 0.2;
 
-    let mouseAngle = Math.atan2(ratony - canvas.height / 2, ratonx - canvas.width / 2)
+    let mouseAngle = Math.atan2(ratony - canvas.height / 2, ratonx - canvas.width / 2) + 1 / l([[0, 0], [ratony - canvas.height / 2, ratonx - canvas.width / 2]])
     let CurrentVec = getVecFromAngle(viewAngle);
 
     let MouseVec = getVecFromAngle(mouseAngle);
@@ -211,31 +227,18 @@ function rerender(x, y) {
 
     }
 
-    // bgCtx.fillStyle = rgb(0, 100, 255) // self color
-
-    // bgCtx.beginPath();
-    // bgCtx.arc(canvas.width / 2, canvas.height / 2,
-    //     hitBoxSize,
-    //     0, 2 * Math.PI);
-    // bgCtx.fill();
-
+    //centralPlayer
 
     let characterSize = hitBoxSize * 1.5
-
-    //viewAngle
-
-
-
     DrawPlayer("playerBlue", bgCtx, characterSize, viewAngle, player, frame);
 
     //bgCtx.drawImage(document.getElementById("player"), Math.floor(frame) * 258, 0, 258, 220, canvas.width / 2 - characterSize, canvas.height / 2 - characterSize, characterSize * 2, characterSize * 2)//, )
 
-
-
+    // walls
 
     bgCtx.strokeStyle = rgb(20, 20, 20);
     bgCtx.lineWidth = wallSize * 2;
-    if (true)
+    if (false)
         for (let i = 0; i < walls.length; i++) {
             const line = walls[i];
             bgCtx.beginPath();
@@ -259,6 +262,9 @@ function rerender(x, y) {
 
         }
 
+
+    // other players
+
     for (let p in playersToDraw) {
         if (p != nick) {
             const companion = playersToDraw[p];
@@ -277,12 +283,27 @@ function rerender(x, y) {
         }
     }
 
+    // luz
+
     var grd = bgCtx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, 1000);
     grd.addColorStop(0, "rgba(0,0,0,0)");
     grd.addColorStop(1, "black");
 
     bgCtx.fillStyle = grd
     bgCtx.fillRect(-AcumulatedCamOfset[0], -AcumulatedCamOfset[1], canvas.width, canvas.height);
+    // sparks
+
+    for (let ev in ongoingEvents) {
+        if (ongoingEvents[ev].data.type == "spark") {
+            let sparkSize = 300;
+            let viewAngle = getAngleFromVec(ongoingEvents[ev].data.vec)
+            bgCtx.translate(canvas.width / 2 - player[0] + ongoingEvents[ev].data.pos[0], canvas.height / 2 - player[1] + ongoingEvents[ev].data.pos[1]);
+            bgCtx.rotate(+viewAngle - Math.PI);
+            bgCtx.drawImage(document.getElementById("spark"), Math.floor(ongoingEvents[ev].frame) * 13440 / 14, 0, 13440 / 14, 540, -sparkSize, -sparkSize, sparkSize * 2, sparkSize * 2); //, )
+            bgCtx.rotate(-viewAngle + Math.PI);
+            bgCtx.translate(-canvas.width / 2 + player[0] - ongoingEvents[ev].data.pos[0], -canvas.height / 2 + player[1] - ongoingEvents[ev].data.pos[1]);
+        }
+    }
 
     //cam shake n stuff
     ctx.translate(-AcumulatedCamOfset[0], -AcumulatedCamOfset[1]);
@@ -307,6 +328,7 @@ function start() {
         tick()
 
     }, 1000 / 60);
+    getEvents();
     refreshPos();
 }
 
@@ -314,21 +336,23 @@ let doneEvents = [];
 let events = {}
 
 const httpGetEvents = new XMLHttpRequest()
-httpGetEvents.onreadystatechange = () => { 
-    if (httpRefresh.readyState == 4 && httpRefresh.status == 200) {
-        events = JSON.parse(httpRefresh.responseText)
+httpGetEvents.onreadystatechange = () => {
+    if (httpGetEvents.readyState == 4 && httpGetEvents.status == 200) {
+        events = JSON.parse(httpGetEvents.responseText)
+        //console.log(httpGetEvents.responseText)
         for (const ev in events) {
-            if(doneEvents.indexOf(ev) != -1){
+            if (doneEvents.indexOf(ev) != -1) {
                 delete events[ev]
             }
         }
-        getEvents();
+        setTimeout(getEvents, 10);
     }
 }
 
 function getEvents() {
+    //console.log("query for events")
     let current = new URL(window.location.href + "AJAX");
-    current.searchParams.set("queryPurpose", "refresh")
+    current.searchParams.set("queryPurpose", "GetEvent")
     current.searchParams.set("name", nick)
     current.searchParams.set("transmision", JSON.stringify({ "pos": player, "viewAngle": viewAngle, "animFrame": frame }))
 
@@ -345,8 +369,7 @@ function hit(victim) {
     let current = new URL(window.location.href + "AJAX");
     current.searchParams.set("queryPurpose", "event")
     current.searchParams.set("eventType", "hit")
-    current.searchParams.set("transmision", JSON.stringify({ "victim": victim }))
-
+    current.searchParams.set("transmision", JSON.stringify({ "victim": victim, "shooter": player }))
     httpEvent.open("GET", current.href, true)
 
     httpEvent.send()
@@ -356,7 +379,7 @@ function sparkAt(pos, vec) {
     let current = new URL(window.location.href + "AJAX");
     current.searchParams.set("queryPurpose", "event")
     current.searchParams.set("eventType", "spark")
-    current.searchParams.set("transmision", JSON.stringify({ "pos": pos, "vec": vec }))
+    current.searchParams.set("transmision", JSON.stringify({ "pos": pos, "vec": vec, "shooter": player }))
 
     httpEvent.open("GET", current.href, true)
 
@@ -400,13 +423,10 @@ document.onclick = () => {
     if (playerLast) {
         let knockback = 40;
         playerLast = [playerLast[0] + Math.cos(viewAngle) * knockback, playerLast[1] + Math.sin(viewAngle) * knockback]
-        let n = document.getElementById("shootAudio" + Math.floor(1 + Math.random() * 4));
-        n.pause();
-        n.currentTime = 0;
-        n.play();
+
 
         let bulletPos = [player[0], player[1]]
-        let bulletVec = [viewAngle[0], viewAngle[1]]
+        let bulletVec = [Math.cos(viewAngle), Math.sin(viewAngle)]
 
         let crash = false;
         let steps = 0;
@@ -418,8 +438,8 @@ document.onclick = () => {
 
             let min = 10000;
             obstacleType = "wall"
-            for (let walls = 0; walls < walls.length; walls++) {
-                const w = array[walls];
+            for (let wall = 0; wall < walls.length; wall++) {
+                const w = walls[wall];
                 let d = distanceToWall(w[0], w[1], bulletPos);
                 if (d < min) {
                     min = d;
@@ -435,12 +455,13 @@ document.onclick = () => {
                 }
             }
 
-            if (min >= bulletR) {
+            if (min <= bulletR) {
                 crash = true;
             } else {
                 bulletVec = normalize(bulletVec, min);
                 bulletPos = [bulletPos[0] + bulletVec[0], bulletPos[1] + bulletVec[1]]
             }
+            steps++;
         }
 
         if (obstacleType != "wall") {
@@ -453,9 +474,6 @@ document.onclick = () => {
 }
 
 
-
-let players;
-let playersToDraw = -1;
 
 
 const cornerLeniency = 0.9
@@ -539,3 +557,4 @@ function drawPoligon(vertex, color, ctx, xOff, yOff) {
 
     ctx.fill();
 }
+
