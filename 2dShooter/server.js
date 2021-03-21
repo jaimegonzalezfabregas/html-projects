@@ -2,6 +2,8 @@ var fs = require('fs');
 var url = require('url');
 var http = require('http');
 
+let worldSize = 100;
+
 http.globalAgent.keepAlive = true;
 
 let server = http.createServer(function (req, res) {
@@ -37,20 +39,47 @@ let server = http.createServer(function (req, res) {
             res.write(JSON.stringify({ "map": map, "teams": teams }));
             return res.end();
         }
+        if (directions.query.queryPurpose == "panñumPanñum") {
+
+            users[directions.query.victim].health -= 10;
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.write("OK");
+            return res.end();
+        }
         if (directions.query.queryPurpose == "logOut") {
-            console.log("loggin out someone")
 
-            teams[users[directions.query.name].team].playerNum--
-            delete users[directions.query.name]
+            if (directions.query.name in users) {
+                console.log("loggin out someone")
+                teams[users[directions.query.name].team].playerNum--
+                delete users[directions.query.name]
 
-            console.log(teams, users)
+            }
         }
         if (directions.query.queryPurpose == "startGame") {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.write(gameStart);
             return res.end();
-            
+
         }
+
+        if (directions.query.queryPurpose == "event") {
+            console.log("event happened")
+            if (directions.query.eventType == "hit") {
+                events[nextEventId] = { "type": "hit", "victim": directions.query.transmision.victim }
+            } else if (directions.query.eventType == "spark") {
+                events[nextEventId] = { "type": "spark", "pos": directions.query.transmision.pos, "vec": directions.query.transmision.vec }
+            }
+            nextEventId++;
+        }
+
+        if (directions.query.queryPurpose == "GetEvent") {
+            console.log("event query")
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.write(events);
+            return res.end();
+        }
+
         if (directions.query.queryPurpose == "logIn") {
             console.log("loggin in someone")
             let success = "OK";
@@ -60,8 +89,10 @@ let server = http.createServer(function (req, res) {
                 teams[directions.query.team].playerNum++
                 users[directions.query.name] = {
                     "pos": teams[directions.query.team].initialPos,
-                    "health": 1,
-                    "team": directions.query.team
+                    "health": 100,
+                    "team": directions.query.team,
+                    "viewAngle": 0,
+                    "animFrame": 0
                 }
 
             } else {
@@ -82,7 +113,23 @@ let server = http.createServer(function (req, res) {
         }
         if (directions.query.queryPurpose == "refresh") {
 
-            users[directions.query.name].pos = JSON.parse(directions.query.pos).a
+            if (gameOver == "true") {
+                for (let t in teams) {
+                    teams[t].playerNum = 0;
+                }
+                users = {};
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.write(JSON.stringify({ "restart": "true" }));
+                return res.end();
+            }
+            let recieved = JSON.parse(directions.query.transmision);
+            //console.log("transmision viewAngle", recieved.viewAngle)
+            users[directions.query.name].pos = recieved.pos
+            users[directions.query.name].viewAngle = recieved.viewAngle
+            users[directions.query.name].animFrame = recieved.animFrame
+
+            //console.log(users)
+
 
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.write(JSON.stringify(users));
@@ -105,24 +152,47 @@ let server = http.createServer(function (req, res) {
 server.listen(8000);
 
 let gameStart = "false";
+let gameOver = "false"
 
 let users = {}
-let teams = {
-    "Team1": {
-        "playerNum": 0,
-        "initialPos": [200, 200]
-    },
-    // "Team2": {
-    //     "playerNum": 0,
-    //     "initialPos": [200, 300]
-    // }
-}
+let teams = {}
 let maxPlayersPerTeam = 1;
+
+function setUpTeams() {
+    for (let y = 0; y < map.length; y++) {
+        const row = map[y];
+        for (let x = 0; x < row.length; x++) {
+            const c = row[x];
+            if (c != "#" && c != " ") {
+                teams[TeamNames[c]] = {
+                    "playerNum": 0,
+                    "initialPos": [(x + 1) * worldSize, (y + 1) * worldSize]
+                }
+            }
+        }
+    }
+}
+
+let events = {}
+let nextEventId = 0;
+setInterval(() => {
+    let d = new Date();
+    for (let e in events) {
+        if (events[e].time < d.getTime() - 2000) {
+            delete events[e]
+        }
+    }
+}, 1000);
+
+let TeamNames = {
+    "a": "Team1",
+    "b": "Team2"
+}
 
 let map = [
     "#######################",
-    "#      #              #",
-    "#      #              #",
+    "#    #a #             #",
+    "#    #  #             #",
     "#               #     #",
     "#               #     #",
     "#####  ##########     #",
@@ -132,3 +202,5 @@ let map = [
     "#          #          #",
     "#######################",
 ]
+
+setUpTeams();

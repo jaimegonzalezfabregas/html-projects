@@ -20,11 +20,11 @@ function prepareData() {
 
             console.log("recieved gameData", gameData)
             let map = gameData.map
-            mapSize = Math.max(map.length,map[0].length)
+            mapSize = Math.max(map.length, map[0].length)
             for (let y = 1; y < map.length - 1; y++) {
                 const row = map[y];
                 for (let x = 1; x < row.length - 1; x++) {
-                    if (map[y][x] == " ") {
+                    if (map[y][x] != "#") {
                         if (map[y + 1][x] == "#") {
                             walls.push([[x * worldSize, (y + 1) * worldSize], [(x + 1) * worldSize, (y + 1) * worldSize]])
                         }
@@ -84,6 +84,7 @@ function logIn() {
                         team = document.getElementById("team").value;
                         nick = document.getElementById("playerName").value;
                         player = gameData.teams[team].initialPos
+                        playerLast = player
                         logged = true;
                         document.getElementById("loading").style.display = "block"
                         document.getElementById("login").style.display = "none"
@@ -125,13 +126,12 @@ function waitForStart() {
                 }, 100);
             }
         }
-
     }
     http.send()
 }
 
 
-window.onbeforeunload = () => {
+function unlog() {
     if (logged) {
         let current = new URL(window.location.href + "AJAX");
         current.searchParams.set("queryPurpose", "logOut")
@@ -140,6 +140,10 @@ window.onbeforeunload = () => {
         http.open("GET", current.href, true)
         http.send()
     }
+}
+
+window.onbeforeunload = () => {
+    unlog();
 }
 
 function clean(walls) {
