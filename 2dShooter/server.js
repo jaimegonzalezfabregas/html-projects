@@ -39,14 +39,7 @@ let server = http.createServer(function (req, res) {
             res.write(JSON.stringify({ "map": map, "teams": teams }));
             return res.end();
         }
-        if (directions.query.queryPurpose == "panñumPanñum") {
 
-            users[directions.query.victim].health -= 10;
-
-            res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.write("OK");
-            return res.end();
-        }
         if (directions.query.queryPurpose == "logOut") {
 
             if (directions.query.name in users) {
@@ -66,17 +59,29 @@ let server = http.createServer(function (req, res) {
         if (directions.query.queryPurpose == "event") {
             console.log("event happened")
             if (directions.query.eventType == "hit") {
-                events[nextEventId] = { "type": "hit", "victim": directions.query.transmision.victim }
+                events[nextEventId] = {
+                    "type": "hit",
+                    "victim": directions.query.transmision.victim,
+                    "shooterPos": JSON.parse(directions.query.transmision).shooter
+                }
+                users[directions.query.transmision.victim].health -= 10;
             } else if (directions.query.eventType == "spark") {
-                events[nextEventId] = { "type": "spark", "pos": directions.query.transmision.pos, "vec": directions.query.transmision.vec }
+                events[nextEventId] = {
+                    "type": "spark",
+                    "pos": JSON.parse(directions.query.transmision).pos,
+                    "vec": JSON.parse(directions.query.transmision).vec,
+                    "shooterPos": JSON.parse(directions.query.transmision).shooter
+                }
             }
+            let d = new Date();
+            events[nextEventId].time = d.getTime();
             nextEventId++;
         }
 
         if (directions.query.queryPurpose == "GetEvent") {
-            console.log("event query")
+            //console.log("event query")
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.write(events);
+            res.write(JSON.stringify(events));
             return res.end();
         }
 
@@ -182,6 +187,7 @@ setInterval(() => {
             delete events[e]
         }
     }
+    console.log(events)
 }, 1000);
 
 let TeamNames = {
