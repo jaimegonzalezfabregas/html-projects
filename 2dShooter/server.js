@@ -118,7 +118,7 @@ let server = http.createServer(function (req, res) {
         }
         if (directions.query.queryPurpose == "refresh") {
 
-            if (gameOver == "true") {
+            if (gameOver == "true" || !(directions.query.name in users)) {
                 for (let t in teams) {
                     teams[t].playerNum = 0;
                 }
@@ -197,7 +197,7 @@ let TeamNames = {
 
 let map = [
     "#######################",
-    "#    #a #             #",
+    "#b   #a #             #",
     "#    #  #             #",
     "#               #     #",
     "#               #     #",

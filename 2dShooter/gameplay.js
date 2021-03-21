@@ -92,7 +92,7 @@ function tick() {
 
     const turnSpeed = 0.2;
 
-    let mouseAngle = Math.atan2(ratony - canvas.height / 2, ratonx - canvas.width / 2) + 1 / l([[0, 0], [ratony - canvas.height / 2, ratonx - canvas.width / 2]])
+    let mouseAngle = Math.atan2(ratony - canvas.height / 2, ratonx - canvas.width / 2)
     let CurrentVec = getVecFromAngle(viewAngle);
 
     let MouseVec = getVecFromAngle(mouseAngle);
@@ -447,7 +447,7 @@ document.onclick = () => {
             }
             for (let p in players) {
                 if (p != nick) {
-                    let d = l([player[p].pos, bulletPos]);
+                    let d = l([players[p].pos, bulletPos]);
                     if (d < min) {
                         min = d;
                         obstacleType = p
