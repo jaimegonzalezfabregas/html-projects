@@ -57,14 +57,16 @@ let server = http.createServer(function (req, res) {
         }
 
         if (directions.query.queryPurpose == "event") {
-            console.log("event happened")
+            // console.log("event happened")
             if (directions.query.eventType == "hit") {
                 events[nextEventId] = {
                     "type": "hit",
-                    "victim": directions.query.transmision.victim,
+                    "victim": JSON.parse(directions.query.transmision).victim,
                     "shooterPos": JSON.parse(directions.query.transmision).shooter
                 }
-                users[directions.query.transmision.victim].health -= 10;
+                users[JSON.parse(directions.query.transmision).victim].health -= 10;
+                console.log("hit a human, ", users[JSON.parse(directions.query.transmision).victim])
+
             } else if (directions.query.eventType == "spark") {
                 events[nextEventId] = {
                     "type": "spark",
@@ -187,7 +189,6 @@ setInterval(() => {
             delete events[e]
         }
     }
-    console.log(events)
 }, 1000);
 
 let TeamNames = {
