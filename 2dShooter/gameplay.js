@@ -23,8 +23,6 @@ let wallSize = 10;
 
 let CamOfsets = [[0, 0], [0, 0]]
 
-let health = 100;
-
 function reorientVecToFaceVec(vec, gide, reverse) {
     let m = vec[0] * gide[0] < 0 || vec[1] * gide[1] < 0 ? -1 : 1
     m = (reverse ? -1 : 1) * m
@@ -46,6 +44,8 @@ function getAngleFromVec(v) {
 let AcumulatedCamOfset = [0, 0]
 let ongoingEvents = {}
 
+let abort = false;
+
 let nextAudio = 0;
 
 function tick() {
@@ -63,6 +63,8 @@ function tick() {
         n.pause();
         n.currentTime = 0;
         n.play();
+
+        delete events[ev]
 
     }
 
@@ -147,6 +149,9 @@ function tick() {
 
         playersToDraw[pl].viewAngle = players[pl].viewAngle
         playersToDraw[pl].animFrame = players[pl].animFrame
+
+        playersToDraw[pl].health = playersToDraw[pl].health + (players[pl].health - playersToDraw[pl].health) * 0.05
+
 
     }
 
@@ -269,17 +274,26 @@ function rerender(x, y) {
         if (p != nick) {
             const companion = playersToDraw[p];
 
-            //console.log(companion)
 
             DrawPlayer(companion.team == team ? "playerBlue" : "playerRed", bgCtx, characterSize, companion.viewAngle, companion.pos, companion.animFrame);
 
-            bgCtx.font = "70px Arial";
+            bgCtx.font = "40px Arial";
             bgCtx.textAlign = "center";
             bgCtx.fillStyle = rgb(255, 255, 255)
             bgCtx.fillText(p, canvas.width / 2 - player[0] + companion.pos[0], canvas.height / 2 - player[1] + companion.pos[1]);
-            bgCtx.strokeStyle = companion.team == team ? "rgb(100,100,255)" : "rgb(255,100,100)";
+
             bgCtx.lineWidth = 2;
             bgCtx.strokeText(p, canvas.width / 2 - player[0] + companion.pos[0], canvas.height / 2 - player[1] + companion.pos[1]);
+
+            let downOffset = 10;
+            let healthBarWidth = 100;
+            let healthBarHeight = 10;
+            bgCtx.fillStyle = "#555555"
+            bgCtx.fillRect(canvas.width / 2 - player[0] + companion.pos[0] - healthBarWidth / 2, canvas.height / 2 - player[1] + companion.pos[1] - healthBarHeight / 2 + downOffset, healthBarWidth, healthBarHeight)
+            bgCtx.fillStyle = rgb((100 - companion.health) * 255 / 100, 255 / 100 * companion.health, 30)
+            bgCtx.fillRect(canvas.width / 2 - player[0] + companion.pos[0] - healthBarWidth / 2, canvas.height / 2 - player[1] + companion.pos[1] - healthBarHeight / 2 + downOffset, healthBarWidth * companion.health / 100, healthBarHeight)
+
+            bgCtx.strokeStyle = companion.team == team ? "rgb(100,100,255)" : "rgb(255,100,100)";
         }
     }
 
@@ -325,7 +339,8 @@ function normalize(vec, b) {
 }
 function start() {
     setInterval(() => {
-        tick()
+        if (!abort)
+            tick()
 
     }, 1000 / 60);
     getEvents();
@@ -345,7 +360,8 @@ httpGetEvents.onreadystatechange = () => {
                 delete events[ev]
             }
         }
-        setTimeout(getEvents, 10);
+        if (!abort)
+            setTimeout(getEvents, 10);
     }
 }
 
@@ -366,6 +382,9 @@ const httpEvent = new XMLHttpRequest()
 httpEvent.onreadystatechange = () => { }
 
 function hit(victim) {
+
+    console.log("hitting", victim)
+
     let current = new URL(window.location.href + "AJAX");
     current.searchParams.set("queryPurpose", "event")
     current.searchParams.set("eventType", "hit")
@@ -394,14 +413,20 @@ httpRefresh.onreadystatechange = () => {
         if ("restart" in players) {
             unlog();
             alert("Game Over")
+            abort = true;
             window.location.reload(false);
         }
         if (playersToDraw == -1) {
             playersToDraw = players;
         }
-        health = players[nick].health
+
+
+        if()
+
+
         setTimeout(() => {
-            refreshPos()
+            if (!abort)
+                refreshPos()
         }, 1000 / 60);
     }
 
@@ -447,7 +472,7 @@ document.onclick = () => {
             }
             for (let p in players) {
                 if (p != nick) {
-                    let d = l([players[p].pos, bulletPos]);
+                    let d = l([players[p].pos, bulletPos]) - hitBoxSize;
                     if (d < min) {
                         min = d;
                         obstacleType = p
@@ -465,7 +490,7 @@ document.onclick = () => {
         }
 
         if (obstacleType != "wall") {
-            hit(p)
+            hit(obstacleType)
         } else {
             sparkAt(bulletPos, bulletVec)
         }
