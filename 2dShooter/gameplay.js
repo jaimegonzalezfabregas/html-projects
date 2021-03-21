@@ -13,10 +13,14 @@ let maxV = 10;
 let acceleration = 10;
 let friction = 0.7;
 let worldSize = 100;
-let player = [2 * worldSize, 2 * worldSize];
-let playerLast = player;
+let player
+let playerLast
 let hitBoxSize = 70;
 let wallSize = 10;
+
+let CamOfsets = [[0, 0], [0, 0]]
+
+let health = 100;
 
 function reorientVecToFaceVec(vec, gide, reverse) {
     let m = vec[0] * gide[0] < 0 || vec[1] * gide[1] < 0 ? -1 : 1
@@ -28,8 +32,6 @@ function reorientVecToFaceVec(vec, gide, reverse) {
 let viewAngle = 0;
 let mouseAngle = 0;
 
-let camOfsetVec
-
 function getVecFromAngle(a) {
     return [Math.cos(a), Math.sin(a)]
 }
@@ -38,13 +40,33 @@ function getAngleFromVec(v) {
     return Math.atan2(v[1], v[0])
 }
 
+let AcumulatedCamOfset = [0, 0]
+let ongoingEvents = {}
+
 function tick() {
+
+    for(let ev in events){
+        doneEvents.push(ev);
+        ongoingEvents[ev] = {"frame":0, "data":events[ev]}
+    }
+
+    for (let ev in ongoingEvents) {
+        ongoingEvents[ev].frame ++
+        if (ongoingEvents[ev].frame > 14){
+            delete ongoingEvents[ev]
+        }
+    }
+
     //console.log("tick")
     //w - 87
     //a - 65
     //s - 83
     //d - 68
-
+    AcumulatedCamOfset = [0, 0]
+    for (let i = 0; i < CamOfsets.length; i++) {
+        const off = CamOfsets[i];
+        AcumulatedCamOfset = [AcumulatedCamOfset[0] + off[0], AcumulatedCamOfset[1] + off[1]]
+    }
 
     let nextLast = [player[0], player[1]]
     let shifting = keys[16] * -0.2
@@ -52,7 +74,7 @@ function tick() {
     frame += l([[0, 0], v]) / 10
     frame = frame % 20;
 
-    const turnSpeed = 0.5;
+    const turnSpeed = 0.2;
 
     let mouseAngle = Math.atan2(ratony - canvas.height / 2, ratonx - canvas.width / 2)
     let CurrentVec = getVecFromAngle(viewAngle);
@@ -68,6 +90,9 @@ function tick() {
     let nextVec = [nextVecMouse[0] + (nextVecWalk[0] - nextVecMouse[0]) * l([[0, 0], v]) / 30, nextVecMouse[1] + (nextVecWalk[1] - nextVecMouse[1]) * l([[0, 0], v]) / 30]
 
     viewAngle = getAngleFromVec(nextVec)
+
+    CamOfsets[0] = normalize(nextVecMouse, -100)
+
 
 
     //console.log("got to ", viewAngle)
@@ -98,9 +123,15 @@ function tick() {
 
     }
 
+    // interpolate other players
+
     for (let pl in players) {
         playersToDraw[pl].pos[0] = playersToDraw[pl].pos[0] + (players[pl].pos[0] - playersToDraw[pl].pos[0]) * 0.9
         playersToDraw[pl].pos[1] = playersToDraw[pl].pos[1] + (players[pl].pos[1] - playersToDraw[pl].pos[1]) * 0.9
+
+        playersToDraw[pl].viewAngle = players[pl].viewAngle
+        playersToDraw[pl].animFrame = players[pl].animFrame
+
     }
 
     //console.log(player)
@@ -110,17 +141,25 @@ function tick() {
 
 let frame = 0;
 let canvas = document.getElementById("shadow")
+let bg = document.getElementById("bg")
 
 function rerender(x, y) {
     //console.log("start render")
-    // render sadows
+
     let ctx = canvas.getContext("2d");
     canvas.height = canvas.clientHeight
     canvas.width = canvas.clientWidth
-    //console.log(canvas.height, canvas.width)
 
+    let bgCtx = bg.getContext("2d")
+    bg.height = bg.clientHeight
+    bg.width = bg.clientWidth
+
+    //cam shake n stuff
     ctx.fillStyle = "rgb(255, 255, 255,0)"
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(-canvas.height, -canvas.width, canvas.width * 2, canvas.height * 2);
+
+    ctx.translate(AcumulatedCamOfset[0], AcumulatedCamOfset[1]);
+    bgCtx.translate(AcumulatedCamOfset[0], AcumulatedCamOfset[1]);
 
     for (let wall = 0; wall < walls.length; wall++) {
         const w = walls[wall];
@@ -147,15 +186,14 @@ function rerender(x, y) {
 
         //console.log("shadow polinome", shadowPoligon)
 
-        drawPoligon(shadowPoligon, rgb(0, 0, 0), ctx, -x + canvas.width / 2, -y + canvas.height / 2)
+        drawPoligon(shadowPoligon, rgb(0, 0, 0), ctx,
+            -x + canvas.width / 2,
+            -y + canvas.height / 2)
     }
 
     // render background
 
-    let bg = document.getElementById("bg")
-    let bgCtx = bg.getContext("2d")
-    bg.height = bg.clientHeight
-    bg.width = bg.clientWidth
+
 
     //floor:
 
@@ -164,7 +202,11 @@ function rerender(x, y) {
     let resize = 4;
     for (let y = 0; y < mapSize; y++) {
         for (let x = 0; x < mapSize; x++) {
-            bgCtx.drawImage(img, resize * x * worldSize - player[0] + canvas.width / 2, resize * y * worldSize - player[1] + canvas.height / 2, resize * worldSize * 1.001, resize * worldSize * 1.001);
+            bgCtx.drawImage(img,
+                resize * x * worldSize - player[0] + canvas.width / 2,
+                resize * y * worldSize - player[1] + canvas.height / 2,
+                resize * worldSize * 1.001,
+                resize * worldSize * 1.001);
         }
 
     }
@@ -182,11 +224,9 @@ function rerender(x, y) {
 
     //viewAngle
 
-    bgCtx.translate(canvas.width / 2, canvas.height / 2);
-    bgCtx.rotate(viewAngle);
-    bgCtx.drawImage(document.getElementById("player"), Math.floor(frame) * 258, 0, 258, 220, -characterSize, -characterSize, characterSize * 2, characterSize * 2)//, )
-    bgCtx.rotate(-viewAngle);
-    bgCtx.translate(-canvas.width / 2, -canvas.height / 2);
+
+
+    DrawPlayer("playerBlue", bgCtx, characterSize, viewAngle, player, frame);
 
     //bgCtx.drawImage(document.getElementById("player"), Math.floor(frame) * 258, 0, 258, 220, canvas.width / 2 - characterSize, canvas.height / 2 - characterSize, characterSize * 2, characterSize * 2)//, )
 
@@ -223,21 +263,17 @@ function rerender(x, y) {
         if (p != nick) {
             const companion = playersToDraw[p];
 
-            console.log(companion)
+            //console.log(companion)
 
-            bgCtx.fillStyle = companion.team != team ? rgb(255, 100, 0) : rgb(0, 100, 200)
+            DrawPlayer(companion.team == team ? "playerBlue" : "playerRed", bgCtx, characterSize, companion.viewAngle, companion.pos, companion.animFrame);
 
-            bgCtx.beginPath();
-            bgCtx.arc(canvas.width / 2 - player[0] + companion.pos[0], canvas.height / 2 - player[1] + companion.pos[1],
-                hitBoxSize,
-                0, 2 * Math.PI);
-            bgCtx.fill();
-            bgCtx.font = "100px Arial";
+            bgCtx.font = "70px Arial";
             bgCtx.textAlign = "center";
-            bgCtx.fillStyle = rgb(0, 0, 0)
-            bgCtx.fillText(p, canvas.width / 2 - player[0] + companion.pos[0], canvas.height / 2 - player[1] - hitBoxSize + companion.pos[1]);
-            bgCtx.strokeStyle = '#ffffff';
-            bgCtx.strokeText(p, canvas.width / 2 - player[0] + companion.pos[0], canvas.height / 2 - player[1] - hitBoxSize + companion.pos[1]);
+            bgCtx.fillStyle = rgb(255, 255, 255)
+            bgCtx.fillText(p, canvas.width / 2 - player[0] + companion.pos[0], canvas.height / 2 - player[1] + companion.pos[1]);
+            bgCtx.strokeStyle = companion.team == team ? "rgb(100,100,255)" : "rgb(255,100,100)";
+            bgCtx.lineWidth = 2;
+            bgCtx.strokeText(p, canvas.width / 2 - player[0] + companion.pos[0], canvas.height / 2 - player[1] + companion.pos[1]);
         }
     }
 
@@ -246,12 +282,22 @@ function rerender(x, y) {
     grd.addColorStop(1, "black");
 
     bgCtx.fillStyle = grd
-    bgCtx.fillRect(0, 0, bg.width, bg.height);
+    bgCtx.fillRect(-AcumulatedCamOfset[0], -AcumulatedCamOfset[1], canvas.width, canvas.height);
 
-
-
+    //cam shake n stuff
+    ctx.translate(-AcumulatedCamOfset[0], -AcumulatedCamOfset[1]);
+    bgCtx.translate(-AcumulatedCamOfset[0], -AcumulatedCamOfset[1]);
 
 }
+
+function DrawPlayer(team, bgCtx, characterSize, viewAngle, pos, frame) {
+    bgCtx.translate(canvas.width / 2 - player[0] + pos[0], canvas.height / 2 - player[1] + pos[1]);
+    bgCtx.rotate(viewAngle);
+    bgCtx.drawImage(document.getElementById(team), Math.floor(frame) * 258, 0, 258, 220, -characterSize, -characterSize, characterSize * 2, characterSize * 2); //, )
+    bgCtx.rotate(-viewAngle);
+    bgCtx.translate(-canvas.width / 2 + player[0] - pos[0], -canvas.height / 2 + player[1] - pos[1]);
+}
+
 function normalize(vec, b) {
     let a = Math.sqrt(vec[0] * vec[0] + vec[1] * vec[1]) / b
     return [vec[0] / a, vec[1] / a]
@@ -264,30 +310,148 @@ function start() {
     refreshPos();
 }
 
+let doneEvents = [];
+let events = {}
+
+const httpGetEvents = new XMLHttpRequest()
+httpGetEvents.onreadystatechange = () => { 
+    if (httpRefresh.readyState == 4 && httpRefresh.status == 200) {
+        events = JSON.parse(httpRefresh.responseText)
+        for (const ev in events) {
+            if(doneEvents.indexOf(ev) != -1){
+                delete events[ev]
+            }
+        }
+        getEvents();
+    }
+}
+
+function getEvents() {
+    let current = new URL(window.location.href + "AJAX");
+    current.searchParams.set("queryPurpose", "refresh")
+    current.searchParams.set("name", nick)
+    current.searchParams.set("transmision", JSON.stringify({ "pos": player, "viewAngle": viewAngle, "animFrame": frame }))
+
+    httpGetEvents.open("GET", current.href, true)
+
+    httpGetEvents.send()
+}
+
+
+const httpEvent = new XMLHttpRequest()
+httpEvent.onreadystatechange = () => { }
+
+function hit(victim) {
+    let current = new URL(window.location.href + "AJAX");
+    current.searchParams.set("queryPurpose", "event")
+    current.searchParams.set("eventType", "hit")
+    current.searchParams.set("transmision", JSON.stringify({ "victim": victim }))
+
+    httpEvent.open("GET", current.href, true)
+
+    httpEvent.send()
+}
+
+function sparkAt(pos, vec) {
+    let current = new URL(window.location.href + "AJAX");
+    current.searchParams.set("queryPurpose", "event")
+    current.searchParams.set("eventType", "spark")
+    current.searchParams.set("transmision", JSON.stringify({ "pos": pos, "vec": vec }))
+
+    httpEvent.open("GET", current.href, true)
+
+    httpEvent.send()
+}
+
+const httpRefresh = new XMLHttpRequest()
+httpRefresh.onreadystatechange = () => {
+
+    if (httpRefresh.readyState == 4 && httpRefresh.status == 200) {
+        players = JSON.parse(httpRefresh.responseText)
+        if ("restart" in players) {
+            unlog();
+            alert("Game Over")
+            window.location.reload(false);
+        }
+        if (playersToDraw == -1) {
+            playersToDraw = players;
+        }
+        health = players[nick].health
+        setTimeout(() => {
+            refreshPos()
+        }, 1000 / 60);
+    }
+
+}
+
 function refreshPos() {
     let current = new URL(window.location.href + "AJAX");
     current.searchParams.set("queryPurpose", "refresh")
     current.searchParams.set("name", nick)
-    current.searchParams.set("pos", JSON.stringify({ "a": player }))
+    current.searchParams.set("transmision", JSON.stringify({ "pos": player, "viewAngle": viewAngle, "animFrame": frame }))
 
-    const http = new XMLHttpRequest()
+    httpRefresh.open("GET", current.href, true)
 
-    http.open("GET", current.href, true)
-    http.onreadystatechange = () => {
+    httpRefresh.send()
+}
 
-        if (http.readyState == 4 && http.status == 200) {
-            players = JSON.parse(http.responseText)
-            if (playersToDraw == -1) {
-                playersToDraw = players;
+
+document.onclick = () => {
+    if (playerLast) {
+        let knockback = 40;
+        playerLast = [playerLast[0] + Math.cos(viewAngle) * knockback, playerLast[1] + Math.sin(viewAngle) * knockback]
+        let n = document.getElementById("shootAudio" + Math.floor(1 + Math.random() * 4));
+        n.pause();
+        n.currentTime = 0;
+        n.play();
+
+        let bulletPos = [player[0], player[1]]
+        let bulletVec = [viewAngle[0], viewAngle[1]]
+
+        let crash = false;
+        let steps = 0;
+        let bulletR = 10;
+
+        let obstacleType = "wall";
+
+        while (!crash && steps < 100) {
+
+            let min = 10000;
+            obstacleType = "wall"
+            for (let walls = 0; walls < walls.length; walls++) {
+                const w = array[walls];
+                let d = distanceToWall(w[0], w[1], bulletPos);
+                if (d < min) {
+                    min = d;
+                }
             }
-            setTimeout(() => {
-                refreshPos()
-            }, 1000 / 60);
+            for (let p in players) {
+                if (p != nick) {
+                    let d = l([player[p].pos, bulletPos]);
+                    if (d < min) {
+                        min = d;
+                        obstacleType = p
+                    }
+                }
+            }
+
+            if (min >= bulletR) {
+                crash = true;
+            } else {
+                bulletVec = normalize(bulletVec, min);
+                bulletPos = [bulletPos[0] + bulletVec[0], bulletPos[1] + bulletVec[1]]
+            }
+        }
+
+        if (obstacleType != "wall") {
+            hit(p)
+        } else {
+            sparkAt(bulletPos, bulletVec)
         }
 
     }
-    http.send()
 }
+
 
 
 let players;
