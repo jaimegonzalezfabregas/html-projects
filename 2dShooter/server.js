@@ -59,12 +59,23 @@ let server = http.createServer(function (req, res) {
         if (directions.query.queryPurpose == "event") {
             // console.log("event happened")
             if (directions.query.eventType == "hit") {
+                let victim = JSON.parse(directions.query.transmision).victim
                 events[nextEventId] = {
                     "type": "hit",
                     "victim": JSON.parse(directions.query.transmision).victim,
                     "shooterPos": JSON.parse(directions.query.transmision).shooter
                 }
-                users[JSON.parse(directions.query.transmision).victim].health -= 10;
+                users[victim].health -= 10;
+
+                if (users[victim].health <= 0) {
+                    users[victim].health = 100
+                    users[victim].dead = true;
+                    let d = new Date();
+                    users[victim].deathTime = d.getTime();
+
+                    console.log("someone died")
+                }
+
                 console.log("hit a human, ", users[JSON.parse(directions.query.transmision).victim])
 
             } else if (directions.query.eventType == "spark") {
@@ -99,7 +110,9 @@ let server = http.createServer(function (req, res) {
                     "health": 100,
                     "team": directions.query.team,
                     "viewAngle": 0,
-                    "animFrame": 0
+                    "animFrame": 0,
+                    "dead": false,
+                    "deathTime": -1
                 }
 
             } else {
@@ -120,6 +133,14 @@ let server = http.createServer(function (req, res) {
         }
         if (directions.query.queryPurpose == "refresh") {
 
+            let d = new Date();
+            for (let p in users) {
+                if (users[p].dead && d.getTime() - StunnedTime > users[p].deathTime) {
+                    console.log("someone respawned")
+                    users[p].dead = false;
+                }
+            }
+
             if (gameOver == "true" || !(directions.query.name in users)) {
                 for (let t in teams) {
                     teams[t].playerNum = 0;
@@ -131,9 +152,11 @@ let server = http.createServer(function (req, res) {
             }
             let recieved = JSON.parse(directions.query.transmision);
             //console.log("transmision viewAngle", recieved.viewAngle)
-            users[directions.query.name].pos = recieved.pos
-            users[directions.query.name].viewAngle = recieved.viewAngle
-            users[directions.query.name].animFrame = recieved.animFrame
+            if (!users[directions.query.name].dead) {
+                users[directions.query.name].pos = recieved.pos
+                users[directions.query.name].viewAngle = recieved.viewAngle
+                users[directions.query.name].animFrame = recieved.animFrame
+            }
 
             //console.log(users)
 
@@ -191,6 +214,8 @@ setInterval(() => {
     }
 }, 1000);
 
+let StunnedTime = 4000;
+
 let TeamNames = {
     "a": "Team1",
     "b": "Team2"
@@ -198,7 +223,7 @@ let TeamNames = {
 
 let map = [
     "#######################",
-    "#b   #a #             #",
+    "#b   #  #             #",
     "#    #  #             #",
     "#               #     #",
     "#               #     #",

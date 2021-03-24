@@ -4,7 +4,6 @@ let ratonx = 0;
 window.onkeyup = function (e) { keys[e.keyCode] = false; }
 window.onkeydown = function (e) { keys[e.keyCode] = true; }
 
-let walls = []
 const lightSize = 10;
 
 let mapSize;
@@ -20,6 +19,9 @@ let player
 let playerLast
 let hitBoxSize = 70;
 let wallSize = 10;
+
+let doneEvents = [];
+let events = {}
 
 let CamOfsets = [[0, 0], [0, 0]]
 
@@ -48,8 +50,11 @@ let abort = false;
 
 let nextAudio = 0;
 
+let dead = false;
+
 function tick() {
 
+    gunCoolDown--;
     //console.log(ongoingEvents)
 
     for (let ev in events) {
@@ -88,7 +93,8 @@ function tick() {
 
     let nextLast = [player[0], player[1]]
     let shifting = keys[16] * -0.2
-    let v = [(player[0] - playerLast[0] - (keys[65] - keys[68]) * acceleration) * (friction + shifting), (player[1] - playerLast[1] - (keys[87] - keys[83]) * acceleration) * (friction + shifting)]
+    let v = [(player[0] - playerLast[0] - (keys[65] - keys[68]) * acceleration * !dead) * (friction + shifting), (player[1] - playerLast[1] - (keys[87] - keys[83]) * acceleration * !dead) * (friction + shifting)]
+
     frame += l([[0, 0], v]) / 10
     frame = frame % 20;
 
@@ -149,22 +155,20 @@ function tick() {
 
         playersToDraw[pl].viewAngle = players[pl].viewAngle
         playersToDraw[pl].animFrame = players[pl].animFrame
+        playersToDraw[pl].dead = players[pl].dead
 
         playersToDraw[pl].health = playersToDraw[pl].health + (players[pl].health - playersToDraw[pl].health) * 0.05
-
-
     }
 
-    //console.log(player)
-
-    rerender(player[0], player[1]);
+    rerender();
+    hudRefresh()
 }
 
 let frame = 0;
 let canvas = document.getElementById("shadow")
 let bg = document.getElementById("bg")
 
-function rerender(x, y) {
+function rerender() {
     //console.log("start render")
 
     let ctx = canvas.getContext("2d");
@@ -186,9 +190,9 @@ function rerender(x, y) {
         const w = walls[wall];
 
         let wallCenter = [(w[0][0] + w[1][0]) / 2, (w[0][1] + w[1][1]) / 2]
-        let vectorToWall = normalize([x - wallCenter[0], y - wallCenter[1]], (hitBoxSize + wallSize) * 0.7)
+        let vectorToWall = normalize([player[0] - wallCenter[0], player[1] - wallCenter[1]], (hitBoxSize + wallSize) * 0.7)
 
-        let light = [x - vectorToWall[0], y - vectorToWall[1]]
+        let light = [player[0] - vectorToWall[0], player[1] - vectorToWall[1]]
 
         let shadowPoligon = []
         shadowPoligon.push(w[0])
@@ -208,8 +212,8 @@ function rerender(x, y) {
         //console.log("shadow polinome", shadowPoligon)
 
         drawPoligon(shadowPoligon, rgb(0, 0, 0), ctx,
-            -x + canvas.width / 2,
-            -y + canvas.height / 2)
+            -player[0] + canvas.width / 2,
+            -player[1] + canvas.height / 2)
     }
 
     // render background
@@ -233,17 +237,16 @@ function rerender(x, y) {
     }
 
     //centralPlayer
-
     let characterSize = hitBoxSize * 1.5
-    DrawPlayer("playerBlue", bgCtx, characterSize, viewAngle, player, frame);
 
-    //bgCtx.drawImage(document.getElementById("player"), Math.floor(frame) * 258, 0, 258, 220, canvas.width / 2 - characterSize, canvas.height / 2 - characterSize, characterSize * 2, characterSize * 2)//, )
+    if (!dead) {
+        DrawPlayer("playerBlue", bgCtx, characterSize, viewAngle, player, frame);
+    }
 
     // walls
-
-    bgCtx.strokeStyle = rgb(20, 20, 20);
-    bgCtx.lineWidth = wallSize * 2;
-    if (false)
+    if (false) {
+        bgCtx.strokeStyle = rgb(20, 20, 20);
+        bgCtx.lineWidth = wallSize * 2;
         for (let i = 0; i < walls.length; i++) {
             const line = walls[i];
             bgCtx.beginPath();
@@ -266,14 +269,13 @@ function rerender(x, y) {
             bgCtx.fill();
 
         }
-
+    }
 
     // other players
 
     for (let p in playersToDraw) {
-        if (p != nick) {
+        if (p != nick && !playersToDraw[p].dead) {
             const companion = playersToDraw[p];
-
 
             DrawPlayer(companion.team == team ? "playerBlue" : "playerRed", bgCtx, characterSize, companion.viewAngle, companion.pos, companion.animFrame);
 
@@ -333,10 +335,7 @@ function DrawPlayer(team, bgCtx, characterSize, viewAngle, pos, frame) {
     bgCtx.translate(-canvas.width / 2 + player[0] - pos[0], -canvas.height / 2 + player[1] - pos[1]);
 }
 
-function normalize(vec, b) {
-    let a = Math.sqrt(vec[0] * vec[0] + vec[1] * vec[1]) / b
-    return [vec[0] / a, vec[1] / a]
-}
+
 function start() {
     setInterval(() => {
         if (!abort)
@@ -347,104 +346,13 @@ function start() {
     refreshPos();
 }
 
-let doneEvents = [];
-let events = {}
+let gunCoolDown = 0;
 
-const httpGetEvents = new XMLHttpRequest()
-httpGetEvents.onreadystatechange = () => {
-    if (httpGetEvents.readyState == 4 && httpGetEvents.status == 200) {
-        events = JSON.parse(httpGetEvents.responseText)
-        //console.log(httpGetEvents.responseText)
-        for (const ev in events) {
-            if (doneEvents.indexOf(ev) != -1) {
-                delete events[ev]
-            }
-        }
-        if (!abort)
-            setTimeout(getEvents, 10);
-    }
-}
-
-function getEvents() {
-    //console.log("query for events")
-    let current = new URL(window.location.href + "AJAX");
-    current.searchParams.set("queryPurpose", "GetEvent")
-    current.searchParams.set("name", nick)
-    current.searchParams.set("transmision", JSON.stringify({ "pos": player, "viewAngle": viewAngle, "animFrame": frame }))
-
-    httpGetEvents.open("GET", current.href, true)
-
-    httpGetEvents.send()
-}
-
-
-const httpEvent = new XMLHttpRequest()
-httpEvent.onreadystatechange = () => { }
-
-function hit(victim) {
-
-    console.log("hitting", victim)
-
-    let current = new URL(window.location.href + "AJAX");
-    current.searchParams.set("queryPurpose", "event")
-    current.searchParams.set("eventType", "hit")
-    current.searchParams.set("transmision", JSON.stringify({ "victim": victim, "shooter": player }))
-    httpEvent.open("GET", current.href, true)
-
-    httpEvent.send()
-}
-
-function sparkAt(pos, vec) {
-    let current = new URL(window.location.href + "AJAX");
-    current.searchParams.set("queryPurpose", "event")
-    current.searchParams.set("eventType", "spark")
-    current.searchParams.set("transmision", JSON.stringify({ "pos": pos, "vec": vec, "shooter": player }))
-
-    httpEvent.open("GET", current.href, true)
-
-    httpEvent.send()
-}
-
-const httpRefresh = new XMLHttpRequest()
-httpRefresh.onreadystatechange = () => {
-
-    if (httpRefresh.readyState == 4 && httpRefresh.status == 200) {
-        players = JSON.parse(httpRefresh.responseText)
-        if ("restart" in players) {
-            unlog();
-            alert("Game Over")
-            abort = true;
-            window.location.reload(false);
-        }
-        if (playersToDraw == -1) {
-            playersToDraw = players;
-        }
-
-
-        if()
-
-
-        setTimeout(() => {
-            if (!abort)
-                refreshPos()
-        }, 1000 / 60);
-    }
-
-}
-
-function refreshPos() {
-    let current = new URL(window.location.href + "AJAX");
-    current.searchParams.set("queryPurpose", "refresh")
-    current.searchParams.set("name", nick)
-    current.searchParams.set("transmision", JSON.stringify({ "pos": player, "viewAngle": viewAngle, "animFrame": frame }))
-
-    httpRefresh.open("GET", current.href, true)
-
-    httpRefresh.send()
-}
-
-
+// pañum pañum
 document.onclick = () => {
+    if (dead) return
+    if(gunCoolDown > 0) return
+    gunCoolDown = 100
     if (playerLast) {
         let knockback = 40;
         playerLast = [playerLast[0] + Math.cos(viewAngle) * knockback, playerLast[1] + Math.sin(viewAngle) * knockback]
@@ -471,7 +379,7 @@ document.onclick = () => {
                 }
             }
             for (let p in players) {
-                if (p != nick) {
+                if (p != nick && !players[p].dead) {
                     let d = l([players[p].pos, bulletPos]) - hitBoxSize;
                     if (d < min) {
                         min = d;
@@ -498,43 +406,20 @@ document.onclick = () => {
     }
 }
 
-
-
-
-const cornerLeniency = 0.9
+function normalize(vec, b) {
+    let a = Math.sqrt(vec[0] * vec[0] + vec[1] * vec[1]) / b
+    return [vec[0] / a, vec[1] / a]
+}
 
 function distanceToWall(p1, p2, s) {
-    return Math.sqrt(distToSegmentSquared(s, p1, p2))
-
-    // euristic
-
-    // let a = l([p1, p2])
-    // let b = l([p2, s])
-    // let c = l([s, p1])
-    // let area = 0.25 * Math.sqrt(((a + b + c) * (-a + b + c) * (a - b + c) * (a + b - c)))
-    // // area = 1/2 * h * a ; h = area * 2 / a
-    // //console.log(p1,p2,s)
-    // let ret = area * 2 / a
-
-    // if (b * cornerLeniency < hitBoxSize) {
-    //     return a
-    // }
-    // if (c * cornerLeniency < hitBoxSize) {
-    //     return c
-    // }
-    // if (b > a || c > a) {
-    //     return hitBoxSize * 2
-    // }
-
-
-    // return ret;
+    return distToSegmentSquared(s, p1, p2)
 }
 
 function distToSegmentSquared(p, v, w) {
     let l2 = l([w, v]) * l([w, v]);
     let t = ((p[0] - v[0]) * (w[0] - v[0]) + (p[1] - v[1]) * (w[1] - v[1])) / l2;
     t = Math.max(0, Math.min(1, t));
-    return Math.pow(l([p, [v[0] + t * (w[0] - v[0]), v[1] + t * (w[1] - v[1])]]), 2);
+    return l([p, [v[0] + t * (w[0] - v[0]), v[1] + t * (w[1] - v[1])]]);
 }
 
 function l(w) {
@@ -544,20 +429,6 @@ function l(w) {
 function eq(a, b) {
     return a[0] == b[0] && a[1] == b[1]
 }
-
-// document.onmousemove = () => {
-//     MainLight = [ratonx, ratony]
-//     rerender()
-// }
-
-// function createObstacle(points) {
-//     let obstacle = []
-//     for (let p = 0; p < points.length; p++) {
-//         obstacle.push([points[p], points[(p + 1) % points.length]])
-//     }
-//     obstacles.push(obstacle)
-// }
-
 
 function min(a, b) {
     return a < b ? a : b;
