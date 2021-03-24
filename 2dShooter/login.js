@@ -1,9 +1,7 @@
 let team;
 let nick;
 let logged = false;
-
-
-
+let walls = []
 let gameData = -1;
 
 function prepareData() {

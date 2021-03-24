@@ -35,9 +35,13 @@
     </div>
     <div id="gameplay" class="fullscreen" style="display: none;">
 
-        <canvas class="fullscreen" id="bg" width="1920" height="1080" style="position: fixed; top: 0; left:0;"></canvas>
+        <canvas class="fullscreen" id="bg" width="1920" height="1080" 
+            style="position: fixed; top: 0; left:0;"></canvas>
         <canvas class="fullscreen" id="shadow" width="1920" height="1080"
             style="position: fixed; top: 0; left:0;"></canvas>
+        <canvas class="fullscreen" id="hud" width="1920" height="1080"
+            style="position: fixed; top: 0; left:0;"></canvas>
+
     </div>
 
     <image src="file?dir=floor.jpg" style="display: none;" id="floorTile"></image>
@@ -48,6 +52,8 @@
 
     <script src="file?dir=gameplay.js"></script>
     <script src="file?dir=login.js"></script>
+    <script src="file?dir=hud.js"></script>
+    <script src="file?dir=comunications.js"></script>
     <script src="file?dir=utils.js"></script>
 
     <audio src="file?dir=Generic_Pistol/9MM-1.wav" id="shootAudio1"> hola </audio>
