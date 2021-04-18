@@ -13,7 +13,7 @@ let playersToDraw = -1;
 
 let maxV = 10;
 let acceleration = 5;
-let friction = 0.7;
+let friction = 0.8;
 let worldSize = 100;
 let player
 let playerLast
@@ -47,6 +47,8 @@ let AcumulatedCamOfset = [0, 0]
 let ongoingEvents = {}
 
 let abort = false;
+
+let FacingWalkStrength = 3;
 
 let nextAudio = 0;
 
@@ -109,13 +111,13 @@ function tick() {
     let vAngle = Math.atan2(v[1], v[0])
 
     let WalkVec = getVecFromAngle(vAngle);
-    let nextVecWalk = [CurrentVec[0] + (WalkVec[0] - CurrentVec[0]) * turnSpeed, CurrentVec[1] + (WalkVec[1] - CurrentVec[1]) * turnSpeed]
+    let nextVecWalk = [CurrentVec[0] + (WalkVec[0] * FacingWalkStrength - CurrentVec[0]) * turnSpeed, CurrentVec[1] + (WalkVec[1] * FacingWalkStrength - CurrentVec[1]) * turnSpeed]
 
     let nextVec = [nextVecMouse[0] + (nextVecWalk[0] - nextVecMouse[0]) * l([[0, 0], v]) / 30, nextVecMouse[1] + (nextVecWalk[1] - nextVecMouse[1]) * l([[0, 0], v]) / 30]
 
     viewAngle = getAngleFromVec(nextVec)
 
-    CamOfsets[0] = normalize(nextVecMouse, -100)
+    //CamOfsets[0] = normalize(nextVecMouse, 0)
 
 
 
@@ -301,12 +303,13 @@ function rerender() {
 
     // luz
 
-    var grd = bgCtx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, 1000);
+    var grd = bgCtx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, Math.max(canvas.width/2,canvas.height/2));
     grd.addColorStop(0, "rgba(0,0,0,0)");
     grd.addColorStop(1, "black");
 
     bgCtx.fillStyle = grd
     bgCtx.fillRect(-AcumulatedCamOfset[0], -AcumulatedCamOfset[1], canvas.width, canvas.height);
+
     // sparks
 
     for (let ev in ongoingEvents) {
@@ -352,6 +355,7 @@ let gunCoolDown = 0;
 document.onclick = () => {
     if (dead) return
     if(gunCoolDown > 0) return
+    shake(0, 10, 30);
     gunCoolDown = 100
     if (playerLast) {
         let knockback = 40;
@@ -415,7 +419,7 @@ function distanceToWall(p1, p2, s) {
     return distToSegmentSquared(s, p1, p2)
 }
 
-function distToSegmentSquared(p, v, w) {
+function distToSegmentSquared(p, v, w) { // p: point, v: segment first Point, w: segment second Point
     let l2 = l([w, v]) * l([w, v]);
     let t = ((p[0] - v[0]) * (w[0] - v[0]) + (p[1] - v[1]) * (w[1] - v[1])) / l2;
     t = Math.max(0, Math.min(1, t));

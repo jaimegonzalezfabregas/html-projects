@@ -50,3 +50,16 @@ function hudRefresh() {
 
 
 }
+
+
+function shake(i, recursive, magnitude){
+
+    CamOfsets[i] = [Math.random() * magnitude, Math.random() * magnitude]
+
+    if(recursive > 0){setTimeout(() => {
+        shake(i, recursive - 1, maxRecursive, magnitude);
+    }, 100);
+    }if(recursive == 0){
+        CamOfsets[i] = [0,0];
+    }
+}
