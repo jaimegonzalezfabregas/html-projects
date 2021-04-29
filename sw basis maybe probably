@@ -1,0 +1,114 @@
+
+const publicVapidKey = 'BCs48b6RZVRLP_9vxQa0_fpzTNkcMu_ylxfmJLNo3KcY6lD3wnUEFXOQUc_YxUo6vz1Fj9fogCXUXw9iGndmfEM';
+
+const HeartBeatPeriod = 1000;
+const TimeOutTime = 5000;
+
+let lastTouch = -1;
+let subscription;
+
+let id = -1
+
+addEventListener('message', event => {
+    console.log("The client sent me a message: ", event.data);
+    if (event.data.purpose == "Defribilatior") {
+        if (id == -1) {
+            id = event.data.id;
+            //let d = new Date();
+            //lastTouch = d.getTime();
+            HeartBeat()
+        }
+    }
+});
+
+self.addEventListener('push', event => {
+    const data = event.data.json();
+
+    //console.log("Push: ", data)
+
+    let d = new Date();
+    lastTouch = d.getTime();
+    if (data.pushPurpose == "Notification") {
+        self.registration.showNotification(data.title, {
+            body: data.content,
+        });
+    } else if (data.pushPurpose == "Conection established") {
+        console.log("reconected to server")
+
+    } else if (data.pushPurpose == "Ping") {
+
+    } else {
+        console.log("unkown purpose")
+    }
+
+});
+
+async function HeartBeat() {
+
+    console.log("bump pumb")
+
+    let d = new Date();
+
+    // check conection
+
+    if (TimeOutTime < (d.getTime() - lastTouch)) {
+        try { 
+            await relog() 
+        }
+        catch (e) {
+            console.error(e);
+        }
+    } else {
+        //console.log("last comunication happened ", (d.getTime() - lastTouch), "ms ago")
+    }
+
+    setTimeout(HeartBeat, HeartBeatPeriod)
+}
+
+async function relog() {
+    console.log("atempting reload")
+
+    if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(function (permission) {
+            // If the user accepts, let's create a notification
+            if (permission === "granted") {
+                var notification = new Notification("Hi there!");
+            }
+        });
+    }
+
+    subscription = await this.registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
+    });
+    console.log("subscription", subscription)
+    try {
+        await fetch('/subscribe', {
+            method: 'POST',
+            body: JSON.stringify({ "link": subscription, "id": id }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+    } catch (e) {
+        console.log("server is offline")
+        console.error(e)
+    }
+}
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = this.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+//self.addEventListener("pushsubscriptionchange", relog, false);
