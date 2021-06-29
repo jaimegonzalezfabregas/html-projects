@@ -1,0 +1,86 @@
+<html>
+
+<head>
+    <style>
+        canvas {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+            padding: 0px;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas" width="1920" height="1080"></canvas>
+    <script>
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext("2d");
+        var keys = [];
+        var ratony = 0;
+        var ratonx = 0;
+        window.onkeyup = function (e) { keys[e.keyCode] = false; }
+        window.onkeydown = function (e) { keys[e.keyCode] = true; }
+
+
+        function drawLine(a, b, color, thickness) {
+            if (color)
+                ctx.fillStyle = color;
+            else
+                ctx.fillStyle = "#555555";
+
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+        }
+
+
+        function drawXYrect(x, y, grosor, color) {
+            //console.log("fufo?")
+            if (color)
+                ctx.fillStyle = color;
+            else
+                ctx.fillStyle = "#555555";
+            ctx.fillRect(x, y, grosor, grosor);
+        }
+        function rgb(r, g, b) {
+            var r_ = check(decToHex(r));
+            var g_ = check(decToHex(g));
+            var b_ = check(decToHex(b));
+            return "#" + r_ + g_ + b_;
+        }
+
+        function decToHex(n) {
+            if (n < 0) {
+                n = 0xFFFFFFFF + n + 1;
+            }
+            return Math.round(n).toString(16).toUpperCase();
+        }
+
+        function check(n) {
+            //console.log(n)
+            if (n.length > 2) {
+                return "FF";
+            } else if (n.length < 2) {
+                return "0" + n;
+
+            } else return n
+        }
+
+        canvas.addEventListener('mousemove', function onMouseover(e) {
+            ratonx = e.clientX;
+            ratony = e.clientY;
+        });
+
+    </script>
+</body>
+
+</html>
