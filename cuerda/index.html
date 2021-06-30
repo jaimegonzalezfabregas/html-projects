@@ -29,6 +29,168 @@
         window.onkeyup = function (e) { keys[e.keyCode] = false; }
         window.onkeydown = function (e) { keys[e.keyCode] = true; }
 
+        canvas.height = canvas.clientHeight;
+        canvas.width = canvas.clientWidth;
+        let nodes = [{
+            "p": {
+                "x": canvas.width / 2,
+                "y": 30
+            },
+            "preP": {
+                "x": 0,
+                "y": 0
+            },
+            "pinned": true,
+            "grabbed": false,
+        }]
+
+        const lengthOfSegment = 10;
+
+        for (let i = 1; i < 40; i++) {
+            nodes.push(
+                {
+                    "p": {
+                        "x": nodes[i - 1].p.x + lengthOfSegment,
+                        "y": 0
+                    },
+                    "preP": {
+                        "x": 0,
+                        "y": 0
+                    },
+                    "pinned": false,
+                    "grabbed": false,
+                }
+            )
+        }
+
+        let links = (() => {
+            let ret = []
+
+            for (let i = 1; i < nodes.length; i++) {
+                ret.push({
+                    "a": i,
+                    "b": i - 1,
+                    "l": lengthOfSegment,
+                })
+            }
+
+            return ret;
+        })();
+
+        let DeltaTime = 10;
+
+        let g = { "x": 0, "y": 1 };
+
+        let selected = -1;
+
+        canvas.onclick = () => {
+            if (selected != -1) {
+
+                nodes[selected].grabbed = false;
+
+                selected = -1;
+                return
+            }
+
+            let ratonPos = { "x": ratonx, "y": ratony };
+
+            let closest = 0;
+            let distClosest = mod(sub(ratonPos, nodes[0].p))
+            for (let i = 0; i < nodes.length; i++) {
+                let tmpDist = mod(sub(ratonPos, nodes[i].p))
+
+                if (tmpDist < distClosest) {
+                    distClosest = tmpDist;
+                    closest = i;
+                }
+
+            }
+            selected = closest
+            console.log(selected)
+            nodes[selected].grabbed = true;
+        }
+
+        setInterval(() => {
+            canvas.height = canvas.clientHeight;
+            canvas.width = canvas.clientWidth;
+
+
+
+            nodes = limitExpansion(nodes);
+
+
+
+            for (let i = 0; i < nodes.length; i++) {
+                drawXYrect(nodes[i].p, 5, rgb(0, 0, 0))
+            }
+
+            for (let i = 0; i < links.length; i++) {
+                const lnk = links[i];
+                drawLine(nodes[lnk.a].p, nodes[lnk.b].p, 2, rgb(0, 0, 0))
+            }
+
+
+        }, DeltaTime);
+
+        function limitExpansion(nodes) {
+            let loops = 10;
+            let maxExpansion = springLenght * 2;
+            for (let l = 0; l < loops; l++) {
+
+                for (let i = 0; i < nodes.length; i++) {
+                    for (let j_ = 0; j_ < nodes[i].connectedTo.length; j_++) {
+                        let j = nodes[i].connectedTo[j_]
+                        if (j > 0 && j < nodes.length) {
+                            if (mod(sub(nodes[i].p, nodes[j].p)) > maxExpansion) {
+                                if (!nodes[j].pinned && !nodes[j].grabbed) {
+                                    let dir = norm(sub(nodes[i].p, nodes[j].p), (mod(sub(nodes[i].p, nodes[j].p)) - maxExpansion) / loops)
+                                    nodes[j].p = add(nodes[j].p, dir);
+                                }
+                            }
+                        }
+                    }
+
+                }
+
+
+            }
+
+            return nodes
+        }
+
+        function projection(a, b) { // a on b
+            return mul(b, scalarProd(a, b) / mod(b))
+        }
+
+        function scalarProd(a, b) {
+            return a.x * b.x + a.y * b.y;
+        }
+
+        function perp(a) {
+            return { "x": a.y, "y": -a.x }
+        }
+
+        function mul(a, k) {
+            return { "x": a.x * k, "y": a.y * k }
+        }
+
+        function norm(a, l) {
+            let l_ = l || 1;
+            let m = mod(a) / l_;
+            return { "x": a.x / m, "y": a.y / m }
+        }
+
+        function mod(a) {
+            return (a.x ** 2 + a.y ** 2) ** .5
+        }
+
+        function sub(a, b) {
+            return { "x": a.x - b.x, "y": a.y - b.y }
+        }
+
+        function add(a, b) {
+            return { "x": a.x + b.x, "y": a.y + b.y }
+        }
 
         function drawLine(a, b, color, thickness) {
             if (color)
@@ -43,13 +205,13 @@
         }
 
 
-        function drawXYrect(x, y, grosor, color) {
+        function drawXYrect(p, grosor, color) {
             //console.log("fufo?")
             if (color)
                 ctx.fillStyle = color;
             else
                 ctx.fillStyle = "#555555";
-            ctx.fillRect(x, y, grosor, grosor);
+            ctx.fillRect(p.x, p.y, grosor, grosor);
         }
         function rgb(r, g, b) {
             var r_ = check(decToHex(r));
@@ -78,6 +240,12 @@
         canvas.addEventListener('mousemove', function onMouseover(e) {
             ratonx = e.clientX;
             ratony = e.clientY;
+
+
+            if (selected != -1) {
+                nodes[selected].p = { "x": ratonx, "y": ratony };
+            }
+
         });
 
     </script>
