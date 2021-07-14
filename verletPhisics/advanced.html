@@ -1,0 +1,669 @@
+<html>
+
+<head>
+    <style>
+        canvas {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+            padding: 0px;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas" width="1920" height="1080"></canvas>
+    <script>
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext("2d");
+        var keys = [];
+        var ratony = 0;
+        var ratonx = 0;
+        window.onkeyup = function (e) { keys[e.keyCode] = false; }
+        window.onkeydown = function (e) { keys[e.keyCode] = true; }
+
+        canvas.height = canvas.clientHeight;
+        canvas.width = canvas.clientWidth;
+
+        const lengthOfSegment = 20;
+        let nodes = []
+        let links = []
+        let side = 40;
+        let g = { "x": 0, "y": 1 };
+
+
+        if (false) {// tela
+            for (let x = 0; x < side; x++) {
+                for (let y = 0; y < side; y++) {
+                    nodes.push(
+                        {
+                            "tmp": {},
+                            "mass": 1,
+                            "rad": 0,
+                            "p": {
+                                "x": 100 + x * lengthOfSegment,
+                                "y": 100 + y * lengthOfSegment
+                            },
+                            "preP": {
+                                "x": 100 + x * lengthOfSegment,
+                                "y": 100 + y * lengthOfSegment
+                            },
+                            "pinned": y == 0 && (x % 13 == 0),
+                            "grabbed": false,
+                        }
+                    )
+                }
+            }
+
+            links = (() => {
+                let ret = []
+
+                // vert
+
+                for (let i = 0; i < nodes.length; i++) {
+                    if (i % side != 0)
+                        ret.push({
+                            "a": i,
+                            "b": i - 1,
+                            "l": lengthOfSegment,//* (Math.random()+1)/2,
+                            "fragility": 3 + Math.random() * 8
+                        })
+                }
+
+                //hor
+
+                for (let i = 0; i < nodes.length - side; i++) {
+                    ret.push({
+                        "a": i,
+                        "b": i + side,
+                        "l": lengthOfSegment, //* (Math.random() + 1) / 2,
+                        "fragility": 3 + Math.random() * 3
+                    })
+                }
+
+                // triangualate
+
+                //  for (let i = 0; i < nodes.length - side; i++) {
+                //     if ((i+1) % side != 0)
+                //         ret.push({
+                //             "a": i,
+                //             "b": i + side +1,
+                //             "l": lengthOfSegment * 2**.5,
+                //         })
+                // }
+
+                return ret;
+            })();
+        }
+
+        { // objetos
+
+
+            let objIdentifiers = "jaime";
+            let padding = 50;
+            const ballSize = 2 // 4 fits perfectly
+            let drawing = [
+                "                            ",
+                "   jjjjj   aaa   i  m   m  eeeee ",
+                "     j    a   a     mm mm  e ",
+                "     j    aaaaa  i  m m m  eee ",
+                "   j j    a   a  i  m   m  e ",
+                "    jj    a   a  i  m   m  eeeee "
+            ]
+
+            for (let objIdentI = 0; objIdentI < objIdentifiers.length; objIdentI++) {
+                const ident = objIdentifiers[objIdentI];
+                let objStart = nodes.length;
+                
+
+                for (let i = 0; i < drawing.length; i++) {
+                    const row = drawing[i];
+                    for (let j = 0; j < row.length; j++) {
+                        const char = row[j];
+                        if (char == ident) {
+                            nodes.push(
+                                {
+                                    "objCode": ident,
+                                    "tmp": {},
+                                    "mass": 1,
+                                    "rad": padding / ballSize,
+                                    "p": {
+                                        "x": 100 + j * padding,
+                                        "y": 100 + i * padding
+                                    },
+                                    "preP": {
+                                        "x": 100 + j * padding,
+                                        "y": 100 + i * padding
+                                    },
+                                    "pinned": false,
+                                    "grabbed": false,
+                                }
+                            )
+                            nodes.push(
+                                {
+                                    "objCode": ident,
+                                    "tmp": {},
+                                    "mass": 1,
+                                    "rad": + padding / ballSize,
+                                    "p": {
+                                        "x": 100 + j * padding,
+                                        "y": 100 + i * padding + padding / 2
+                                    },
+                                    "preP": {
+                                        "x": 100 + j * padding,
+                                        "y": 100 + i * padding + padding / 2
+                                    },
+                                    "pinned": false,
+                                    "grabbed": false,
+                                }
+                            )
+                            nodes.push(
+                                {
+                                    "objCode": ident,
+                                    "tmp": {},
+                                    "mass": 1,
+                                    "rad": padding / ballSize,
+                                    "p": {
+                                        "x": 100 + j * padding + padding / 2,
+                                        "y": 100 + i * padding
+                                    },
+                                    "preP": {
+                                        "x": 100 + j * padding + padding / 2,
+                                        "y": 100 + i * padding
+                                    },
+                                    "pinned": false,
+                                    "grabbed": false,
+                                }
+                            )
+                            nodes.push(
+                                {
+                                    "objCode": ident,
+                                    "tmp": {},
+                                    "mass": 1,
+                                    "rad": padding / ballSize,
+                                    "p": {
+                                        "x": 100 + j * padding + padding / 2,
+                                        "y": 100 + i * padding + padding / 2
+                                    },
+                                    "preP": {
+                                        "x": 100 + j * padding + padding / 2,
+                                        "y": 100 + i * padding + padding / 2
+                                    },
+                                    "pinned": false,
+                                    "grabbed": false,
+                                }
+                            )
+                        }
+                    }
+                }
+
+                for (let i = objStart; i < nodes.length; i++) {
+                    for (let j = i + 1; j < nodes.length; j++) {
+
+                        let dist = d(nodes[i].p, nodes[j].p)
+                        if (true || dist < padding * 3)
+                            links.push({
+                                "a": i,
+                                "b": j,
+                                "l": dist,
+                                "fragility": 3 + Math.random() * 8
+                            })
+
+                    }
+
+                }
+            }
+
+
+
+        }
+        let DeltaTime = 10;
+
+
+        let selected = -1;
+
+        canvas.onclick = () => {
+            if (selected != -1) {
+
+                nodes[selected].grabbed = false;
+
+                selected = -1;
+                return
+            }
+
+            let ratonPos = { "x": ratonx, "y": ratony };
+
+            let closest = 0;
+            let distClosest = mod(sub(ratonPos, nodes[0].p))
+            for (let i = 0; i < nodes.length; i++) {
+                let tmpDist = mod(sub(ratonPos, nodes[i].p))
+
+                if (tmpDist < distClosest) {
+                    distClosest = tmpDist;
+                    closest = i;
+                }
+
+            }
+            selected = closest
+            // console.log(selected)
+            nodes[selected].grabbed = true;
+        }
+
+        setInterval(() => {
+            canvas.height = canvas.clientHeight;
+            canvas.width = canvas.clientWidth;
+
+
+            // verlet implementation (non eulerian)
+
+            {// velovity stuff
+                for (let i = 0; i < nodes.length; i++) {
+                    if (!nodes[i].grabbed && !nodes[i].pinned) {
+
+                        const element = nodes[i];
+                        let v = add(sub(nodes[i].p, nodes[i].preP), g)
+
+                        nodes[i].preP = nodes[i].p;
+                        nodes[i].p = add(nodes[i].p, v);
+
+                    }
+                }
+            }
+
+
+
+            {// linkage and colisions stuff
+
+                const precisionColision = 4;
+
+                const precisionLinkage = 20;
+
+                const stiffness = 10; // always lower than precision plz
+                for (let p = 0; p < precisionLinkage; p++) {
+
+                    for (let i = 0; i < nodes.length; i++) {
+                        nodes[i].tmp.posArr = [];
+                    }
+
+                    for (let l = 0; l < links.length; l++) {
+                        let link = links[l]
+                        let linkDir = sub(nodes[link.a].p, nodes[link.b].p);
+
+                        let trueDist = mod(linkDir)
+                        // if (trueDist > link.l * link.fragility) {
+                        //     links.splice(l, 1)
+                        //     l--;
+                        // } else {
+                        let TotalCorrection = trueDist - link.l; // negative when too close
+                        let actualCorrection = .5 / precisionLinkage * TotalCorrection * stiffness;
+
+                        //console.log(actualCorrection)
+
+                        let mul = movable(nodes[links[l].a]) ^ movable(nodes[links[l].b]) ? 2 : 1
+
+                        if (movable(nodes[links[l].a]))
+
+                            nodes[links[l].a].tmp.posArr.push(add(nodes[link.a].p, norm(linkDir, -actualCorrection * mul)))
+
+                        if (movable(nodes[links[l].b]))
+                            nodes[links[l].b].tmp.posArr.push(add(nodes[link.b].p, norm(linkDir, actualCorrection * mul)))
+
+                        //}
+
+
+                    }
+                    let colisions = detectColisions();
+
+                    for (let i = 0; i < nodes.length; i++) {
+                        let posArr = nodes[i].tmp.posArr
+                        if (posArr.length != 0) {
+                            let median = { "x": 0, "y": 0 }
+                            for (let j = 0; j < posArr.length; j++) {
+                                const pos = posArr[j];
+                                median = add(median, pos)
+                            }
+                            median = mul(median, 1 / posArr.length)
+                            nodes[i].p = median;
+                        }
+
+                    }
+
+                    // colisions
+
+                    for (let p = 0; p < precisionColision; p++)
+                        for (let k = 0; k < colisions.length; k++) {
+
+                            [i, j] = colisions[k]
+
+                            let a = nodes[j];
+                            let b = nodes[i];
+
+                            let d = sub(a.p, b.p);
+                            let currentDist = mod(d);
+                            let goalDist = a.rad + b.rad
+
+                            //console.log(d, currentDist, goalDist)
+
+                            let actualdispa = norm(d, (- currentDist + goalDist) / 2 * b.mass / (a.mass + b.mass))
+                            let actualdispb = norm(d, (- currentDist + goalDist) / 2 * a.mass / (a.mass + b.mass))
+
+
+                            if (movable(a)) {
+                                a.p = add(a.p, actualdispa);
+                                // a.preP = add(a.preP, mul(sub(a.p, a.preP), 0.3))
+                            }
+                            if (movable(b)) {
+                                b.p = sub(b.p, actualdispb);
+                                // b.preP = add(b.preP, mul(sub(b.p, b.preP), 0.3))
+                            }
+
+                        }
+
+                }
+            }
+
+            { // screen borders
+                for (let i = 0; i < nodes.length; i++) {
+                    const e = nodes[i];
+
+                    let hit = false
+
+                    if (e.p.x < e.rad) {
+                        e.p.x = e.rad
+                        hit = true
+                    } else
+                        if (e.p.x > canvas.width - e.rad) {
+                            e.p.x = canvas.width - e.rad
+                            hit = true
+                        } else
+                            if (e.p.y < e.rad) {
+                                e.p.y = e.rad
+                                hit = true
+                            } else
+                                if (e.p.y > canvas.height - e.rad) {
+                                    e.p.y = canvas.height - e.rad
+                                    hit = true
+                                }
+
+                    if (hit) {
+                        e.preP = add(e.preP, mul(sub(e.p, e.preP), 0.3))
+                    }
+                }
+            }
+
+
+
+            {// draw
+
+
+
+                // metaballs
+
+                // let linearRes = 1;
+
+                // for (let pi = 0; pi < nodes.length; pi++) {
+                //     const p = nodes[pi];
+                //     let verticesCount = linearRes * p.rad;
+                //     let vertices = [];
+
+                //     for (let j = 0; j < verticesCount; j++) {
+                //         let a = 2 * Math.PI * (j / (verticesCount));
+                //         let minRad = p.rad;
+                //         let maxRad = p.rad * 7;
+
+                //         let r = { "x": Math.cos(a) * minRad + p.p.x, "y": Math.sin(a) * minRad + p.p.y }
+
+                //         let exit = false;
+
+                //         let multiplier = (maxRad - minRad) / 6
+                //         while (multiplier ** 2 > 1 && !exit) {
+                //             while (IntensityAtPos(r.x, r.y) > 1 && !exit) {
+                //                 r.x += Math.cos(a) * multiplier
+                //                 r.y += Math.sin(a) * multiplier
+
+                //                 //if (d(r, p.p) > maxRad) exit = true;
+
+                //             }
+
+                //             multiplier *= -1 / (2 ** .5)
+
+
+                //             while (IntensityAtPos(r.x, r.y) < 1 && !exit) {
+                //                 r.x += Math.cos(a) * multiplier
+                //                 r.y += Math.sin(a) * multiplier
+
+                //                 //if (d(r, p.p) > maxRad) exit = true;
+
+
+                //             }
+
+                //             multiplier *= -1 / (2 ** .5)
+                //         }
+
+
+
+
+                //         vertices.push(r);
+
+                //     }
+
+
+                //     ctx.beginPath();
+                //     ctx.moveTo(vertices[0].x, vertices[0].y);
+
+                //     for (let i = 1; i < verticesCount; i++) {
+                //         ctx.lineTo(vertices[i].x, vertices[i].y);
+                //     }
+
+                //     ctx.closePath();
+                //     ctx.fill();
+                // }
+
+
+                //balls
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#000000';
+                for (let i = 0; i < nodes.length; i++) {
+                    const e = nodes[i]
+                    ctx.beginPath();
+                    ctx.arc(e.p.x, e.p.y, e.rad, 0, 2 * Math.PI, false);
+
+                    ctx.stroke();
+                }
+
+
+                // // links
+                // ctx.lineWidth = 1;
+                // ctx.strokeStyle = '#FF0000';
+                // for (let i = 0; i < links.length; i++) {
+                //     const lnk = links[i];
+                //     drawLine(nodes[lnk.a].p, nodes[lnk.b].p, 2, rgb(0, 0, 0))
+                // }
+            }
+
+
+        }, DeltaTime);
+
+        function detectColisions() {
+            let colisions = [];
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = 0; j < nodes.length; j++) {
+
+                    if(i == j) break
+
+                    if (nodes[i].objCode == nodes[j].objCode) break
+
+                    let a = nodes[j];
+                    let b = nodes[i];
+
+                    let d = sub(a.p, b.p);
+                    let currentDist = mod(d);
+                    let goalDist = a.rad + b.rad
+
+
+
+                    if (currentDist < goalDist) {
+
+                        colisions.push([i, j])
+
+                    }
+                }
+            }
+            return colisions;
+        }
+
+        function IntensityAtPos(x, y) {
+            let ret = 0;
+            for (let i = 0; i < nodes.length; i++) {
+
+                const p = nodes[i];
+                let dist = mod(sub(p.p, { "x": x, "y": y }));
+
+                let minRad = p.rad;
+                let maxRad = p.rad * 2;
+
+                if (dist < maxRad) {
+                    if (dist > minRad) {
+                        let k = 1 / (minRad - maxRad)
+                        let o = -maxRad / (minRad - maxRad)
+                        let w = k * dist + o
+                        w = Math.max(0, w)
+                        w = w ** 2;
+
+                        ret += w
+                    } else {
+                        return 2;
+                    }
+                }
+            }
+            return ret;
+        }
+
+        function d(a, b) {
+            return mod(sub(a, b))
+        }
+
+        function movable(a) {
+            return !a.pinned && !a.grabbed
+        }
+
+        function projection(a, b) { // a on b
+            return mul(b, scalarProd(a, b) / mod(b))
+        }
+
+        function scalarProd(a, b) {
+            return a.x * b.x + a.y * b.y;
+        }
+
+        function perp(a) {
+            return { "x": a.y, "y": -a.x }
+        }
+
+        function mul(a, k) {
+            return { "x": a.x * k, "y": a.y * k }
+        }
+
+        function shuffle(array) { // shamelessly copied from our lord and saviour the internet
+            var m = array.length, t, i;
+
+            // While there remain elements to shuffle…
+            while (m) {
+
+                // Pick a remaining element…
+                i = Math.floor(Math.random() * m--);
+
+                // And swap it with the current element.
+                t = array[m];
+                array[m] = array[i];
+                array[i] = t;
+            }
+
+            return array;
+        }
+
+        function norm(a, l) {
+            let l_ = l || 1;
+            let m = mod(a) / l_;
+            return { "x": a.x / m, "y": a.y / m }
+        }
+
+        function mod(a) {
+            return (a.x ** 2 + a.y ** 2) ** .5
+        }
+
+        function sub(a, b) {
+            return { "x": a.x - b.x, "y": a.y - b.y }
+        }
+
+        function add(a, b) {
+            return { "x": a.x + b.x, "y": a.y + b.y }
+        }
+
+        function drawLine(a, b, color, thickness) {
+            if (color)
+                ctx.fillStyle = color;
+            else
+                ctx.fillStyle = "#555555";
+
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+        }
+
+
+        function drawXYrect(p, grosor, color) {
+            //console.log("fufo?")
+            if (color)
+                ctx.fillStyle = color;
+            else
+                ctx.fillStyle = "#555555";
+            ctx.fillRect(p.x, p.y, grosor, grosor);
+        }
+        function rgb(r, g, b) {
+            var r_ = check(decToHex(r));
+            var g_ = check(decToHex(g));
+            var b_ = check(decToHex(b));
+            return "#" + r_ + g_ + b_;
+        }
+
+        function decToHex(n) {
+            if (n < 0) {
+                n = 0xFFFFFFFF + n + 1;
+            }
+            return Math.round(n).toString(16).toUpperCase();
+        }
+
+        function check(n) {
+            //console.log(n)
+            if (n.length > 2) {
+                return "FF";
+            } else if (n.length < 2) {
+                return "0" + n;
+
+            } else return n
+        }
+
+        canvas.addEventListener('mousemove', function onMouseover(e) {
+            ratonx = e.clientX;
+            ratony = e.clientY;
+
+
+            if (selected != -1) {
+                nodes[selected].preP = { "x": ratonx, "y": ratony };
+                nodes[selected].p = { "x": ratonx, "y": ratony };
+            }
+
+        });
+
+    </script>
+</body>
+
+</html>
