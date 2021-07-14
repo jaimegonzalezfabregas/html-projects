@@ -1,0 +1,334 @@
+<html>
+
+<head>
+    <style>
+        canvas {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+            padding: 0px;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas" width="1920" height="1080"></canvas>
+    <script>
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext("2d");
+        var keys = [];
+        var ratony = 0;
+        var ratonx = 0;
+        window.onkeyup = function (e) { keys[e.keyCode] = false; }
+        window.onkeydown = function (e) { keys[e.keyCode] = true; }
+
+        canvas.height = canvas.clientHeight;
+        canvas.width = canvas.clientWidth;
+
+        const lengthOfSegment = 20;
+        let nodes = []
+        let side = 40;
+
+        /*{
+            "p": {
+                "x": canvas.width / 2,
+                "y": 30
+            },
+            "preP": {
+                "x": canvas.width / 2,
+                "y": 30
+            },
+            "pinned": true,
+            "grabbed": false,
+        } */
+
+
+
+        for (let x = 0; x < side; x++) {
+            for (let y = 0; y < side; y++) {
+                nodes.push(
+                    {
+                        "p": {
+                            "x": 100 + x * lengthOfSegment,
+                            "y": 100 + y * lengthOfSegment
+                        },
+                        "preP": {
+                            "x": 100 + x * lengthOfSegment,
+                            "y": 100 + y * lengthOfSegment
+                        },
+                        "pinned": y == 0,
+                        "grabbed": false,
+                    }
+                )
+            }
+        }
+
+        let links = (() => {
+            let ret = []
+
+            // vert
+
+            for (let i = 0; i < nodes.length; i++) {
+                if (i % side != 0)
+                    ret.push({
+                        "a": i,
+                        "b": i - 1,
+                        "l": lengthOfSegment,//* (Math.random()+1)/2,
+                        "fragility": 3 + Math.random() * 8
+                    })
+            }
+
+            //hor
+
+            for (let i = 0; i < nodes.length - side; i++) {
+                if (i % side != 0)
+                    ret.push({
+                        "a": i,
+                        "b": i + side,
+                        "l": lengthOfSegment, //* (Math.random() + 1) / 2,
+                        "fragility": 3 + Math.random() * 3
+                    })
+            }
+
+            // triangualate
+
+            //  for (let i = 0; i < nodes.length - side; i++) {
+            //     if ((i+1) % side != 0)
+            //         ret.push({
+            //             "a": i,
+            //             "b": i + side +1,
+            //             "l": lengthOfSegment * 2**.5,
+            //         })
+            // }
+
+            return ret;
+        })();
+
+        console.log(links)
+
+        let DeltaTime = 10;
+
+        let g = { "x": 0, "y": 1 };
+
+        let selected = -1;
+
+        canvas.onclick = () => {
+            if (selected != -1) {
+
+                nodes[selected].grabbed = false;
+
+                selected = -1;
+                return
+            }
+
+            let ratonPos = { "x": ratonx, "y": ratony };
+
+            let closest = 0;
+            let distClosest = mod(sub(ratonPos, nodes[0].p))
+            for (let i = 0; i < nodes.length; i++) {
+                let tmpDist = mod(sub(ratonPos, nodes[i].p))
+
+                if (tmpDist < distClosest) {
+                    distClosest = tmpDist;
+                    closest = i;
+                }
+
+            }
+            selected = closest
+            // console.log(selected)
+            nodes[selected].grabbed = true;
+        }
+
+        setInterval(() => {
+            canvas.height = canvas.clientHeight;
+            canvas.width = canvas.clientWidth;
+
+            // verlet implementation (non eulerian)
+
+            {// velovity stuff
+                for (let i = 0; i < nodes.length; i++) {
+                    if (!nodes[i].grabbed && !nodes[i].pinned) {
+
+                        const element = nodes[i];
+                        let v = add(sub(nodes[i].p, nodes[i].preP), g)
+                        nodes[i].preP = nodes[i].p;
+                        nodes[i].p = add(nodes[i].p, v);
+                    }
+                }
+            }
+
+            {// linkage stuff
+
+                shuffle(links)
+                const precision = 10;
+                const stiffness = 10; // always lower than precision plz
+                for (let p = 0; p < precision; p++) {
+
+                    for (let l = 0; l < links.length; l++) {
+                        let link = links[l]
+                        let linkDir = sub(nodes[link.a].p, nodes[link.b].p);
+
+
+
+                        let trueDist = mod(linkDir)
+                        // if (trueDist > link.l * link.fragility) {
+                        //     links.splice(l, 1)
+                        //     l--;
+                        // } else {
+                        let TotalCorrection = trueDist - link.l; // negative when too close
+                        let actualCorrection = .5 / precision * TotalCorrection * stiffness;
+
+                        //console.log(actualCorrection)
+                        if (movable(nodes[links[l].a]))
+
+                            nodes[links[l].a].p = add(nodes[link.a].p, norm(linkDir, -actualCorrection))
+
+                        if (movable(nodes[links[l].b]))
+                            nodes[links[l].b].p = add(nodes[link.b].p, norm(linkDir, actualCorrection))
+
+                        //}
+
+
+                    }
+
+                }
+            }
+
+
+            // for (let i = 0; i < nodes.length; i++) {
+            //     drawXYrect(nodes[i].p, 5, rgb(0, 0, 0))
+            // }
+
+            for (let i = 0; i < links.length; i++) {
+                const lnk = links[i];
+                drawLine(nodes[lnk.a].p, nodes[lnk.b].p, 2, rgb(0, 0, 0))
+            }
+
+            //console.log(JSON.stringify(nodes))
+
+        }, DeltaTime);
+
+        function movable(a) {
+            return !a.pinned && !a.grabbed
+        }
+
+        function projection(a, b) { // a on b
+            return mul(b, scalarProd(a, b) / mod(b))
+        }
+
+        function scalarProd(a, b) {
+            return a.x * b.x + a.y * b.y;
+        }
+
+        function perp(a) {
+            return { "x": a.y, "y": -a.x }
+        }
+
+        function mul(a, k) {
+            return { "x": a.x * k, "y": a.y * k }
+        }
+
+        function shuffle(array) { // shamelessly copied from our lord and saviour the internet
+            var m = array.length, t, i;
+
+            // While there remain elements to shuffle…
+            while (m) {
+
+                // Pick a remaining element…
+                i = Math.floor(Math.random() * m--);
+
+                // And swap it with the current element.
+                t = array[m];
+                array[m] = array[i];
+                array[i] = t;
+            }
+
+            return array;
+        }
+
+        function norm(a, l) {
+            let l_ = l || 1;
+            let m = mod(a) / l_;
+            return { "x": a.x / m, "y": a.y / m }
+        }
+
+        function mod(a) {
+            return (a.x ** 2 + a.y ** 2) ** .5
+        }
+
+        function sub(a, b) {
+            return { "x": a.x - b.x, "y": a.y - b.y }
+        }
+
+        function add(a, b) {
+            return { "x": a.x + b.x, "y": a.y + b.y }
+        }
+
+        function drawLine(a, b, color, thickness) {
+            if (color)
+                ctx.fillStyle = color;
+            else
+                ctx.fillStyle = "#555555";
+
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+        }
+
+
+        function drawXYrect(p, grosor, color) {
+            //console.log("fufo?")
+            if (color)
+                ctx.fillStyle = color;
+            else
+                ctx.fillStyle = "#555555";
+            ctx.fillRect(p.x, p.y, grosor, grosor);
+        }
+        function rgb(r, g, b) {
+            var r_ = check(decToHex(r));
+            var g_ = check(decToHex(g));
+            var b_ = check(decToHex(b));
+            return "#" + r_ + g_ + b_;
+        }
+
+        function decToHex(n) {
+            if (n < 0) {
+                n = 0xFFFFFFFF + n + 1;
+            }
+            return Math.round(n).toString(16).toUpperCase();
+        }
+
+        function check(n) {
+            //console.log(n)
+            if (n.length > 2) {
+                return "FF";
+            } else if (n.length < 2) {
+                return "0" + n;
+
+            } else return n
+        }
+
+        canvas.addEventListener('mousemove', function onMouseover(e) {
+            ratonx = e.clientX;
+            ratony = e.clientY;
+
+
+            if (selected != -1) {
+                nodes[selected].p = { "x": ratonx, "y": ratony };
+                nodes[selected].preP = { "x": ratonx, "y": ratony };
+            }
+
+        });
+
+    </script>
+</body>
+
+</html>
