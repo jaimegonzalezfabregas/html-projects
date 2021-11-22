@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="index.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="container">
+        <canvas id="src" class="src"></canvas>
+        <div class="controls">
+            <button onclick="process()"> process </button>
+            <button onclick="merge()"> merge </button>
+            <input onchange="openFile(event)" type="file" id="input" name="input">
+        </div>
+
+        <canvas id="HorThick" class="HorThick"></canvas>
+        <canvas id="HorSmall" class="HorSmall"></canvas>
+
+        <canvas id="VetSmall" class="VetSmall"></canvas>
+        <canvas id="VerThick" class="VerThick"></canvas>
+
+        <canvas id="GlovalSmall" class="GlovalSmall"></canvas>
+        <canvas id="GlovalThick" class="GlovalThick"></canvas>
+
+    </div>
+
+    <script>
+
+        function openFile(file) {
+            let input = file.target;
+
+            let reader = new FileReader();
+            reader.onload = function () {
+                let dataURL = reader.result;
+                let output = document.getElementById('src');
+                let ctx = output.getContext('2d');
+                let image = new Image();
+                image.addEventListener('load', function () {
+                    let factor = 1//Math.max(output.width / image.width , output.height / image.height);
+                    output.width = image.width;
+                    output.height = image.height;
+                    ctx.drawImage(image, 0, 0, output.width / factor, output.height / factor);
+                    ctx.fill();
+                    //console.log(output.width / factor, output.height / factor)
+                }, true);
+                image.src = dataURL;
+
+            };
+            reader.readAsDataURL(input.files[0]);
+        };
+
+        function merge() {
+            let srcCanvas1 = document.getElementById("HorThick")
+            let srcCanvas2 = document.getElementById("VerThick")
+
+            let dstCanvas1 = document.getElementById("GlovalThick")
+
+            mergeCanvas(srcCanvas1, srcCanvas2, dstCanvas1)
+
+
+            let srcCanvas3 = document.getElementById("HorSmall")
+            let srcCanvas4 = document.getElementById("VetSmall")
+
+            let dstCanvas2 = document.getElementById("GlovalSmall")
+
+            mergeCanvas(srcCanvas3, srcCanvas4, dstCanvas2)
+
+
+
+        }
+
+        function mergeCanvas(a, b, dst) {
+            let srcCanvas = document.getElementById("src");
+            let w = srcCanvas.width;
+            let h = srcCanvas.height;
+
+            let imgDataA = a.getContext("2d").getImageData(0, 0, w, h).data
+            let imaDataB = b.getContext("2d").getImageData(0, 0, w, h).data
+
+            let retimgdata = new Uint8ClampedArray(w * h * 4);
+
+            console.log(retimgdata.length)
+
+            for (let i = 0; i < retimgdata.length; i++) {
+                retimgdata[i] = (imgDataA + imaDataB) / 2
+            }
+
+            let imageDataToDraw = new ImageData(retimgdata, w)
+            dst.height = imageDataToDraw.height;
+            dst.width = imageDataToDraw.width;
+
+            console.log(imageDataToDraw);
+
+            dst.getContext("2d").putImageData(imageDataToDraw, 0, 0);
+        }
+
+        function process() {
+            const maxLowFreq = 7;
+            const minHighFreq = 20;
+            const maxHightFreq = 40;
+
+            let srcCanvas = document.getElementById("src");
+            let w = srcCanvas.width;
+            let h = srcCanvas.height;
+            let image = srcCanvas.getContext("2d").getImageData(0, 0, w, h) // ---r,g,b,a,r,g,b,a,r,g,b,a...
+            //processStep(image, document.getElementById("HorThick"), 0, 0, false)
+
+
+            exec(() => { processStep(image, document.getElementById("HorThick"), 0, maxLowFreq, false) })
+            exec(() => { processStep(image, document.getElementById("VerThick"), 0, maxLowFreq, true) })
+            exec(() => { processStep(image, document.getElementById("HorSmall"), minHighFreq, maxHightFreq, false) })
+            exec(() => { processStep(image, document.getElementById("VetSmall"), minHighFreq, maxHightFreq, true) })
+
+        }
+
+        function exec(f) {
+            setTimeout(f, 10);
+        }
+
+        function processStep(ImageSrc, outputCanvas, rangeStart, rangeEnd, transpose) {
+            let inputImage = ImageSrc.data;
+            //console.log("Input image:", ImageSrc)
+            let w = ImageSrc.width
+            let h = ImageSrc.height
+
+            let WBdata = [] // image in 2d  
+
+            let i = 0;
+
+            for (let y = 0; y < h; y++) {
+                let row = []
+                for (let x = 0; x < w; x++) {
+                    let d = inputImage[i] + inputImage[i + 1] + inputImage[i + 2]
+                    d /= 3
+
+                    row.push(d)
+                    i += 4;
+                }
+                //console.log(i)
+                WBdata.push(row);
+            }
+
+            //console.log("WBdata: ", WBdata)
+            if (transpose) {
+                WBdata = transpose2DArr(WBdata)
+                let buff = w;
+                w = h;
+                h = buff;
+            }
+
+            let ret = []; // image out 2d
+
+            for (let y = 0; y < WBdata.length; y++) {
+                const row = WBdata[y];
+
+                //console.log("row BW data", row)
+
+                let fourrierDecomposition = forwardsFourrier(row, rangeStart, rangeEnd)
+
+                //console.log("row: " + y + " has decomposition: ", fourrierDecomposition)
+                let fourrierRecomposition = backwardsFourrier(fourrierDecomposition, rangeStart, rangeEnd, row.length)
+                //console.log("row: " + y + " has recomposition: ", fourrierRecomposition)
+
+                ret.push(fourrierRecomposition);
+            }
+
+
+            if (transpose) {
+                ret = transpose2DArr(ret)
+                let buff = w;
+                w = h;
+                h = buff;
+            }
+
+            // ret = WBdata
+
+            let retimgdata = new Uint8ClampedArray(w * h * 4);
+
+            console.log("flattening")
+
+            i = 0;
+
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    let z = ret[y][x];
+
+                    z = Math.min(255, z);
+                    z = Math.max(0, z);
+
+                    retimgdata[i] = z
+                    retimgdata[i + 1] = z
+                    retimgdata[i + 2] = z
+                    retimgdata[i + 3] = 255
+                    i += 4
+                }
+            }
+
+            // console.log("normalizing")
+
+            // let min = 255;
+            // let max = 0;
+
+            // for (let i = 0; i < retimgdata.length; i++) {
+            //     const e = retimgdata[i];
+            //     min = Math.min(min, e)
+            //     max = Math.max(max, e)
+            // }
+
+            // for (let i = 0; i < retimgdata.length; i++) {
+            //     retimgdata[i] = (retimgdata[i] - min) / (max - min) * 255;
+
+            // }
+
+            console.log("drawing back")
+
+
+            let imageDataToDraw = new ImageData(retimgdata, w)
+            outputCanvas.height = imageDataToDraw.height;
+            outputCanvas.width = imageDataToDraw.width;
+
+            console.log(imageDataToDraw);
+
+            outputCanvas.getContext("2d").putImageData(imageDataToDraw, 0, 0);
+
+            // draw the canvas
+        }
+
+        function forwardsFourrier(dataArr, rangeStart, rangeEnd) {
+            let m = [];
+            let a = [];
+
+            //console.log(dataArr, rangeStart, rangeEnd)
+
+            for (let i = 0; i < dataArr.length; i++) {
+                dataArr[i] /= 2;
+                dataArr[i] += 255 / 2;
+            }
+
+            for (let freq = rangeStart; freq < rangeEnd; freq++) {
+
+                // revolve data
+
+                let revolved = [];
+
+                for (let i = 0; i < dataArr.length; i++) {
+                    let angle = i / dataArr.length * freq * 2 * Math.PI;
+                    let mod = dataArr[i]
+
+                    revolved.push([Math.cos(angle) * mod, Math.sin(angle) * mod]);
+                }
+
+                // centerOfMassOfRevolved
+
+                let out = [0, 0];
+
+                for (let i = 0; i < revolved.length; i++) {
+                    const e = revolved[i];
+                    out[0] += e[0];
+                    out[1] += e[1];
+                }
+
+                out[0] /= revolved.length;
+                out[1] /= revolved.length;
+
+                a.push(Math.atan2(out[1], out[0]))
+                m.push((out[0] ** 2 + out[1] ** 2) ** .5)
+
+                //console.log(revolved)
+
+            }
+
+
+            return [a, m]
+        }
+
+        function backwardsFourrier(fourrierDecomposition, rangeStart, rangeEnd, retlength) {
+            let ret = [];
+
+            let [a, m] = fourrierDecomposition
+
+            //console.log("a:", a, "m", m)
+
+            for (let i = 0; i < retlength; i++) {
+                let value = 255 / 2;
+
+                for (let j = 0; j < a.length; j++) {
+                    let phi = a[j];
+                    let mod = m[j];
+
+                    value += Math.cos(2 * Math.PI * (rangeStart + j) * (1 - i / retlength) + phi) * mod;
+                }
+
+                ret.push(value)
+
+            }
+
+
+            return ret;
+        }
+
+        function transpose2DArr(input) {
+            //console.log("i have to transpose: ", input)
+            let ret = []
+            for (let y = 0; y < input[0].length; y++) {
+                let row = []
+                for (let x = 0; x < input.length; x++) {
+                    row.push(input[x][y])
+                }
+                ret.push(row);
+
+            }
+            //console.log("result of transposing: ", ret)
+            return ret;
+        }
+
+
+        // function convertURIToImageData(URI) {
+        //     return new Promise(function (resolve, reject) {
+        //         if (URI == null) return reject();
+        //         let canvas = document.createElement('canvas'),
+        //             context = canvas.getContext('2d'),
+        //             image = new Image();
+        //         image.addEventListener('load', function () {
+        //             canvas.width = image.width;
+        //             canvas.height = image.height;
+        //             context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        //             resolve(context.getImageData(0, 0, canvas.width, canvas.height));
+        //         }, false);
+        //         image.src = URI;
+        //     });
+        // }
+    </script>
+
+</body>
+
+
+
+</html>

@@ -1,0 +1,6 @@
+{
+    "powermode.enabled": false,
+    "powermode.presets": "particles", 
+    "powermode.backgroundMode": "mask",
+    "powermode.gifMode": "continue", 
+} 

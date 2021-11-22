@@ -1,0 +1,149 @@
+<html>
+
+<head>
+    <style>
+        canvas {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+            padding: 0px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="canvas" width="1920" height="1080"></canvas>
+
+    <input type="number" min="1" max="1000" id="range">
+    <button onclick="recalculate()"> recalc </button>
+
+
+    <script src="analizer.js"></script>
+
+    <script>
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext("2d");
+
+        let graphite = [];
+
+        let dataM = [11.947271173709117, 2.8784067430153226, 0.5737416852937092, 7.397739976137998, 41.00505159426075, 32.691623055128865, 43.38621896930477, 63.47691771912486, 119.98829342605836, 270.77835756963196, 107.23113179016623, 243.4106704949005, 52.582901522730076, 6.021337632928102, 11.773337322993052, 26.35733157907167, 0.7521515744336874, 17.891508780470577, 16.684550090565054, 20.083244101805562, 7.605331057057012]
+        let dataA = [-2.1486185879597843, -0.09041828300464567, -1.068661534946197, -3.0507670957501563, -2.7811128268468783, -2.8694674074307316, 2.8085674903506743, 3.03530720069879, -2.250862368001222, -0.9666858565213324, 1.173404782540619, -2.292037786816426, -1.6834098171290137, -0.11175568753457658, 1.1195367031285066, 1.3296693548333354, 0.4770923026303815, -0.46305416682129397, 2.581485091574143, -2.669821804275821, 1.2629806261401517]
+
+        function recalculate() {
+            console.log("recalculate")
+            let ret = analize(document.getElementById("range").value);
+            dataA = ret[1];
+            dataM = ret[0];
+            negativeOffset = Math.ceil(-dataA.length / 2);
+            dataM[-negativeOffset] /= 2;
+            console.log("done recalculating")
+        }
+
+
+
+        let negativeOffset = Math.ceil(-dataA.length / 2);
+        console.log(negativeOffset)
+        let time = 0; // from 0 to 1
+        let period = 5000;
+        let tickInterval = 5;
+
+        function tick() {
+            canvas.height = canvas.clientHeight;
+            canvas.width = canvas.clientWidth;
+
+            //draw background
+            ctx.lineWidth = 4;
+
+            ctx.strokeStyle = "#AAAAAA";
+
+            ctx.beginPath();
+            ctx.moveTo(DataPoints[0].x + canvas.width/2 , DataPoints[0].y +canvas.height/2);
+
+            for (let i = 1; i < DataPoints.length; i++) {
+                ctx.lineTo(DataPoints[i].x + canvas.width / 2, DataPoints[i].y + canvas.height / 2)
+            }
+
+            ctx.stroke();
+
+            //drawArm
+            ctx.lineWidth = 1;
+
+            ctx.strokeStyle = "#FF0000";
+
+            let lastEndX = canvas.width / 2;
+            let lastEndY = canvas.height / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(lastEndX, lastEndY);
+
+
+            for (let j = 0; j < dataA.length; j++) {
+
+                let i = -negativeOffset + (Math.floor(j / 2) * Math.pow(-1, j))
+
+
+                let angle = dataA[i] + (i + negativeOffset) * 2 * Math.PI * time;
+
+                let offsetX = Math.sin(angle) * dataM[i];
+                let offsetY = Math.cos(angle) * dataM[i];
+
+                lastEndX += offsetX;
+                lastEndY += offsetY;
+
+                ctx.lineTo(lastEndX, lastEndY)
+
+            }
+
+            ctx.stroke();
+
+            // press pencil
+
+            ctx.lineWidth = 1;
+
+            ctx.strokeStyle = "#000000";
+
+            graphite.push([lastEndX, lastEndY]);
+
+            if (graphite.length > 1000) {
+                graphite.splice(0, 1);
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(graphite[0][0], graphite[0][1]);
+
+            for (let i = 0; i < graphite.length; i++) {
+                ctx.lineTo(graphite[i][0], graphite[i][1])
+            }
+
+            ctx.stroke();
+
+
+
+
+            time += tickInterval / period;
+            console.log("tick");
+        }
+
+        setInterval(tick, tickInterval);
+
+
+        function draw(x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 15, 0, 2 * Math.PI);
+            ctx.stroke();
+        }
+
+        recalculate()
+    </script>
+
+</body>
+
+</html>

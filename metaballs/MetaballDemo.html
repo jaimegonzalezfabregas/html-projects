@@ -1,0 +1,289 @@
+<html>
+
+<head>
+    <style>
+        canvas {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+            padding: 0px;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas" width="1920" height="1080"></canvas>
+    <script>
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext("2d");
+        var keys = [];
+        var ratony = 0;
+        var ratonx = 0;
+        window.onkeyup = function (e) { keys[e.keyCode] = false; }
+        window.onkeydown = function (e) { keys[e.keyCode] = true; }
+
+        let particles = []; // {"pos":{"x":_,"y":_},"minRad":_,"maxRad":_}
+
+        let currentMinRad = 40;
+        let currentMaxRad = 70;
+
+        let XRes = 100;
+        let YRes = 100;
+        let linearRes = 3;
+
+        setInterval(() => { // tick
+
+            canvas.height = canvas.clientHeight;
+            canvas.width = canvas.clientWidth;
+
+            let XFactor = canvas.width / XRes;
+            let YFactor = canvas.height / YRes;
+
+            for (let pi = 0; pi < particles.length; pi++) {
+                const p = particles[pi];
+                let verticesCount = linearRes * p.minRad;
+                let vertices = [];
+
+                let m = p.minRad;
+
+                for (let j = 0; j < verticesCount; j++) {
+                    let a = 2 * Math.PI * (j / (verticesCount));
+                    let r = { "x": Math.cos(a) * m + p.pos.x, "y": Math.sin(a) * m + p.pos.y }
+
+                    let exit = false;
+
+                    while (IntensityAtPos(r.x, r.y) > 1 && !exit) {
+                        r.x += Math.cos(a)
+                        r.y += Math.sin(a)
+
+                        if (d(r, p.pos) > p.maxRad) exit = true;
+                    }
+
+                    while (IntensityAtPos(r.x, r.y) < 1 && !exit) {
+                        r.x -= Math.cos(a) / 10
+                        r.y -= Math.sin(a) / 10
+
+                        if (d(r, p.pos) > p.maxRad) exit = true;
+                    }
+
+                    while (IntensityAtPos(d.x, d.y) > 1 && !exit) {
+                        r.x += Math.cos(a) / 100
+                        r.y += Math.sin(a) / 100
+
+                        if (d(r, p.pos) > p.maxRad) exit = true;
+                    }
+
+                    vertices.push(r);
+
+                }
+
+
+
+
+                ctx.beginPath();
+                ctx.moveTo(vertices[0].x, vertices[0].y);
+
+                for (let i = 1; i < verticesCount; i++) {
+                    ctx.lineTo(vertices[i].x, vertices[i].y);
+                }
+
+                ctx.closePath();
+                ctx.fill();
+            }
+
+
+
+            // for (let pi = 0; pi < particles.length; pi++) {
+            //     let p = particles[pi]
+
+            //     for (let y = -p.maxRad; y < p.maxRad; y += YFactor) {
+            //         let a = Math.sqrt(p.maxRad ** 2 - y ** 2) + 10
+
+            //         for (let x = -a; x < a; x += XFactor) {
+
+            //             let nonRelativeX = p.pos.x + x;
+            //             let nonRelativeY = p.pos.y + y;
+
+            //             let i = IntensityAtPos(nonRelativeX, nonRelativeY)
+            //             drawXYrect(nonRelativeX, nonRelativeY, XFactor + 1, YFactor + 1, RGBFromBG(i))
+
+            //         }
+
+            //     }
+
+            // }
+
+            // for (let x = 0; x < XRes; x++) {
+            //     for (let y = 0; y < YRes; y++) {
+            //         let i = IntensityAtPos((x + .5) * XFactor, (y + .5) * YFactor)
+            //         drawXYrect(x * XFactor, y * YFactor, XFactor + 1, YFactor + 1, RGBFromBG(i))
+            //     }
+            // }
+
+            //console.log(IntensityAtPos(ratonx,ratony))
+            circle(ratonx, ratony, currentMaxRad)
+            circle(ratonx, ratony, currentMinRad)
+
+        }, 30);
+
+        let selected = -1;
+
+        function RGBFromBG(i) {
+            let a = i > 1 ? 0 : 255;
+            return rgb(a, a, a)
+        }
+
+        function circle(x, y, r) {
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, 2 * Math.PI, false);
+
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = '#003300';
+            ctx.stroke();
+        }
+
+        function IntensityAtPos(x, y) {
+            let ret = 0;
+            for (let i = 0; i < particles.length; i++) {
+
+                const p = particles[i];
+                let dist = d(p.pos, { "x": x, "y": y });
+
+                if (dist < p.maxRad) {
+                    if (dist > p.minRad) {
+                        let k = 1 / (p.minRad - p.maxRad)
+                        let o = -p.maxRad / (p.minRad - p.maxRad)
+                        let w = k * dist + o
+                        w = Math.max(0, w)
+                        w = w ** 2;
+
+                        ret += w
+                    } else {
+                        return 2;
+                    }
+
+                }
+
+
+            }
+            return ret;
+        }
+
+        canvas.onclick = () => {
+
+            if (selected != -1) {
+                selected = -1;
+                return;
+            }
+
+            console.log("click")
+
+
+            let pos = { "x": ratonx, "y": ratony };
+            for (let i = 0; i < particles.length; i++) {
+                if (d(pos, particles[i].pos) < particles[i].minRad) {
+                    selected = i;
+                }
+            }
+            if (selected == -1) {
+                selected = particles.length;
+                particles.push({ "pos": pos, "minRad": currentMinRad, "maxRad": currentMaxRad });
+            }
+            console.log(selected)
+        }
+
+        function d(a, b) {
+            return ((a.x - b.x) ** 2 + (a.y - b.y) ** 2) ** .5;
+        }
+
+        function drawXYrect(x, y, grosorX, grosorY, color) {
+            //console.log("fufo?")
+            if (color)
+                ctx.fillStyle = color;
+            else
+                ctx.fillStyle = "#555555";
+            ctx.fillRect(x, y, grosorX, grosorY);
+        }
+
+
+        function rgb(r, g, b) {
+            var r_ = check(decToHex(r));
+            var g_ = check(decToHex(g));
+            var b_ = check(decToHex(b));
+            return "#" + r_ + g_ + b_;
+        }
+
+        function decToHex(n) {
+            if (n < 0) {
+                n = 0xFFFFFFFF + n + 1;
+            }
+            return Math.round(n).toString(16).toUpperCase();
+        }
+
+        function check(n) {
+            //console.log(n)
+            if (n.length > 2) {
+                return "FF";
+            } else if (n.length < 2) {
+                return "0" + n;
+
+            } else return n
+        }
+
+        canvas.addEventListener('mousemove', function onMouseover(e) {
+
+            ratonx = e.clientX;
+            ratony = e.clientY;
+
+            let pos = { "x": ratonx, "y": ratony };
+            if (selected != -1) {
+                particles[selected].pos = pos;
+            }
+
+        });
+
+        window.addEventListener('DOMMouseScroll', mouseWheelEvent);
+        window.addEventListener("wheel", mouseWheelEvent);
+        function mouseWheelEvent(e) {
+            var movement = (e.wheelDelta ? e.wheelDelta : -e.detail);
+            console.log(movement)
+            if (Math.abs(movement) < 0.01) return
+            if (movement < 0) {
+                ScrollDown();
+            } else {
+                ScrollUp();
+            }
+        }
+
+        let increments = 4;
+
+        function ScrollUp() {
+            console.log("Up")
+            if (keys[65]) {
+                currentMinRad += increments;
+            }
+            if (keys[83]) {
+                currentMaxRad += increments;
+            }
+
+        }
+        function ScrollDown() {
+            console.log("Down")
+            if (keys[65]) {
+                currentMinRad -= increments;
+            }
+            if (keys[83]) {
+                currentMaxRad -= increments;
+            }
+        }
+    </script>
+</body>
+
+</html>

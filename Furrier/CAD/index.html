@@ -1,0 +1,67 @@
+<html>
+
+<head>
+    <style>
+        canvas {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+            padding: 0px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="canvas" width="1920" height="1080" onmousedown="onMouseDown()" onmouseup="onMouseUp()"></canvas>
+    <button onclick="output()"> export </button>
+    <script src="./mainJS_CAD.js"></script>
+
+    <script>
+        
+
+
+
+        
+
+        // window.addEventListener('DOMMouseScroll', mouseWheelEvent);
+        // window.addEventListener("wheel", mouseWheelEvent);
+        // function mouseWheelEvent(e) {
+        //     //console.log(e.wheelDelta ? e.wheelDelta : -e.detail);
+        //     var movement = (e.wheelDelta ? e.wheelDelta : -e.detail) / 120;
+        //     if (movement < 0) {
+        //         ScrollUp();
+        //     } else {
+        //         ScrollDown();
+        //     }
+        // }
+        // function ScrollUp() {
+        // }
+        // function ScrollDown() {
+        // }
+
+        function DeepCopy(arr, n) {
+            if (!n) n = 0
+            if (arr instanceof Array) {
+                let ret = []
+                for (let i = 0; i < arr.length; i++) {
+                    ret[i] = DeepCopy(arr[i], n + 1)
+                    //console.log(n+":"+ret+"("+i+")")
+                }
+                return ret
+            }
+            return arr
+        }
+
+    </script>
+
+</body>
+
+</html>
