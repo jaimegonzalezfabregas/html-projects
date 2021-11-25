@@ -1,7 +1,7 @@
 #include <emscripten.h>
 #include <iostream>
 #include <vector>
-#include "Board.h"
+#include "BoardState.h"
 
 using namespace std;
 
