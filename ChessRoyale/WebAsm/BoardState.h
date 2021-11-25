@@ -1,16 +1,14 @@
 #pragma once
 #include <vector>
-#include "Pieces/Piece.h"
+#include "Piece.h"
 #include "GlovalDef.h"
 #include "algorithm"
-class Piece;
-
 class BoardState
 {
 public:
-    BoardState(int width, int height, tPlayer currentTurn)
+    BoardState(int width, int height)
     {
-        this->nextTurn = !currentTurn;
+        this->nextTurn = BLUE;
         this->width = width;
         this->height = height;
     }
@@ -112,7 +110,7 @@ public:
     {
         if (p->getOwner() == player)
         {
-            this->playerEatsPieceAt(player, pos));
+            this->playerEatsPieceAt(player, pos);
             return p->moveTo(pos);
         }
         return true;
@@ -133,15 +131,19 @@ public:
         return player == BLUE ? -1 : 1;
     }
 
-    int evaluate(int r)
+    int evaluate(int r, tPlayer perspective)
     {
         if (r == 0)
-            return euristic();
-        vector<BoardState> branches = getNextBoards();
+            return euristic(perspective);
     }
 
-    int euristic()
+    void placePieceAt(Pos p, int code, tPlayer owner)
     {
+        getPiecesOfPlayer(owner)->push_back(PieceFactory::create(p,code,owner));
+    }
+
+    void step(tPlayer mover){
+        
     }
 
 private:
@@ -150,6 +152,7 @@ private:
     tPlayer nextTurn;
     vector<Piece> piecesBlue;
     vector<Piece> piecesRed;
+
     vector<Piece> *getPiecesOfPlayer(tPlayer p)
     {
         return p == BLUE ? &piecesBlue : &piecesRed;
@@ -159,6 +162,21 @@ private:
     {
         BoardState ret(width, height, nextTurn, piecesBlue, piecesRed);
         ret.movePiece(m, p, nextTurn);
+        return ret;
+    }
+
+    int euristic(tPlayer perspective)
+    {
+        return sumValues(getPiecesOfPlayer(perspective)) - sumValues(getPiecesOfPlayer(!perspective));
+    }
+
+    int sumValues(vector<Piece> *v)
+    {
+        int ret = 0;
+        for (int i = 0; i < v->size(); i++)
+        {
+            ret += (*v)[i].getValue();
+        }
         return ret;
     }
 };

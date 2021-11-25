@@ -5,7 +5,7 @@
 
 using namespace std;
 
-Board *board = 0;
+BoardState *board = 0;
 
 int main()
 {
@@ -19,17 +19,21 @@ void EMSCRIPTEN_KEEPALIVE resetBoard(int w, int h)
     if (board != 0)
         delete board;
 
-    board = new Board(w, h);
+    board = new BoardState(w, h);
 }
 
 int EMSCRIPTEN_KEEPALIVE getPieceAt(int x, int y)
 {
+    board->getPieceAtPos({x,y})->getCode();
 }
 
-void EMSCRIPTEN_KEEPALIVE placePiece()
+void EMSCRIPTEN_KEEPALIVE placePieceAt(int x, int y, int code, int owner)
 {
+    board->placePieceAt({x, y}, code, owner == 0 ? BLUE : RED);
 }
 
-void EMSCRIPTEN_KEEPALIVE move(int player)
+void EMSCRIPTEN_KEEPALIVE step(int player)
 {
+
+    board->step(player == 0 ? BLUE : RED);
 }
