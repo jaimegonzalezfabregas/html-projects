@@ -1,143 +1,141 @@
 <html>
     <head>
         <style>
-            warning{
-                display:none;
+            warning {
+                display: none;
                 border: 2px black solid;
                 background-color: yellow;
             }
-            t{
-                border: 2px black solid; 
-                display:none;  
+            t {
+                border: 2px black solid;
+                display: none;
             }
         </style>
     </head>
-    <body>  
-        <input id="in" type="text">
-        <button onclick="analize()">GO!</button><br>
-        <warning id="warning">The output might be unprecise because the input text is fairly small (if you ask me)<br></warning>
-        <t id="out"><br></t>
+    <body>
+        <h1>1st: get a text sample to derive the frequencies</h1>
+        <p>It should be the same language as the goal text. Any similarity will help</p>
+        <textarea id="sample_in" type="text"></textarea>
+        <button onclick="study()">Study!</button><br>
+        <p id="first_out"><br></p>
+
+        <h1>2nd: input the encoded text</h1>
+        <textarea id="in" type="text"></textarea>
+        <button onclick="decode()">Decifer</button><br>
+        <p id="second_out"><br></p>
+
         <script>
-            var SpanishfrequencesRaw = "A 12.53% B 1.42% C 4.68% D 5.86% E 13.68% F 0.69% G 1.01% H 0.70% I 6.25% J 0.44% K 0.02% L 4.97% M 3.15% N 6.71% Ñ 0.31% O 8.68% P 2.51% Q 0.88% R 6.87% S 7.98% T 4.63% U 3.93% V 0.90% W 0.01% X 0.22% Y 0.90% Z 0.52%"
-            var Spanishfrequences = organiza(MyGodDoSomethingAboutIt(SpanishfrequencesRaw));
-            //console.log(Spanishfrequences);
-            var test = "";
-            var out = [];
-            var frequences = [];
-            function analize() {
-                frequences = [];
-                text = document.getElementById("in").value.toUpperCase();
-                textArray = text.split("");
-                for (let i = 0; i < textArray.length; i++) {
-                    const element = textArray[i];
-                    if(element == "á"){
-                        textArray[i] = "a";
+            var SampleStrip = [];
+
+            function text_to_strip(text) {
+
+                for (let i = 0; i < text.length; i++) {
+                    const element = text[i];
+                    if (element == "á") {
+                        text[i] = "a";
                     }
-                    if(element == "é"){
-                        textArray[i] = "e";
+                    if (element == "é") {
+                        text[i] = "e";
                     }
-                    if(element == "í"){
-                        textArray[i] = "i";
+                    if (element == "í") {
+                        text[i] = "i";
                     }
-                    if(element == "ó"){
-                        textArray[i] = "o";
+                    if (element == "ó") {
+                        text[i] = "o";
                     }
-                    if(element == "ú"){
-                        textArray[i] = "u";
+                    if (element == "ú") {
+                        text[i] = "u";
                     }
                 }
-                for (let i = 0; i < textArray.length; i++) {
-                    const element = textArray[i];
-                    if(element != " " && element != "." && element != ":" && element != "," && element != ";" && element != ";" && element != "\"" && element != "¿" && element != "?"){
-                        if(frequences[element.charCodeAt(0)]){
-                            frequences[element.charCodeAt(0)][0]++;
-                        }else{
-                            frequences[element.charCodeAt(0)] = [1,element];
+
+                let frequences = {};
+                for (let l of text) {
+                    if (/^[a-z]$/.exec(l)) {
+                        let L = l.toUpperCase();
+
+                        if (frequences[L]) {
+                            frequences[L] += 1 / text.length;
+                        } else {
+                            frequences[L] = 1 / text.length;
                         }
                     }
                 }
-                frequences = organiza(compact(frequences));
-                for (let i = 0; i < frequences.length; i++) {
-                    const element = frequences[i];
-                    element[0] = element[0]/textArray.length;
-                    
-                }
-                console.log(frequences);
-                for (let l = 0; l < frequences.length; l++) {
-                    const letraABuscar = frequences[l][1];
-                    const letraPorLaQueRemplazar = Spanishfrequences[l][1];
-                    //console.log("la "+letraABuscar+" por la "+letraPorLaQueRemplazar);
-                    for (let i = 0; i < textArray.length; i++) {
-                        const element = textArray[i];
-                        //console.log(element);
-                        if(element==letraABuscar){
-                            out[i] = letraPorLaQueRemplazar;
-                        }
-                    }
-                }
-                if(out.length<Spanishfrequences.length*2){
-                    document.getElementById("warning").style.display="Block";
-                }
-                document.getElementById("out").style.display="Block";
-                document.getElementById("out").innerHTML=Stringgify(out)
-                //console.log(out);
 
+                console.log("freq", frequences);
+
+                return get_cypher_strip(frequences);
+            }
+
+            function study() {
+                document
+                    .getElementById("first_out")
+                    .innerHTML = ""
+                let sample = document
+                    .getElementById("sample_in")
+                    .value
+                    .toLowerCase()
+                    .split("")
+                SampleStrip = text_to_strip(sample)
+
+                setTimeout(() => {
+
+                    document
+                        .getElementById("first_out")
+                        .innerHTML = "OK!"
+
+                }, 100)
+            }
+
+            function decode() {
+                let encoded = document
+                    .getElementById("in")
+                    .value
+                    .toLowerCase()
+                    .split("")
+
+                let cypher_strip = text_to_strip(encoded);
+
+                let decoded = encoded.map(enc => {
+                    let i = cypher_strip.indexOf(enc.toUpperCase());
+                    console.log(i);
+                    if (i == -1) 
+                        return enc
+                    return SampleStrip[i]
+                });
+
+                document
+                    .getElementById("second_out")
+                    .innerHTML = decoded.join("")
+                console.log(decoded)
 
             }
-            function Stringgify(array) {
-                var ret = ""
-                for (let i = 0; i < array.length; i++) {
-                    const element = array[i];
-                    if (!element) {
-                        ret = ret + " ";
-                    }else{
-                        ret = ret + element;
-                    }
-                }
-                return ret;
-            }
-            function organiza(arrayDesorganizado) {
-                var arrayOrganizado = arrayDesorganizado.slice(0);
-                for (let i = 0; i < arrayOrganizado.length-1; i++) {
-                    var j = i;
-                    while(arrayOrganizado[j][0]<arrayOrganizado[j+1][0]){
-                        arrayOrganizado = swap(arrayOrganizado,j,j+1);
-                        if(j-1>=0) j--;
-                    } 
-                }
-                return arrayOrganizado;
-            }
-            function compact(arrayIn) {
-                var ret = [];
-                for (let i = 0; i < arrayIn.length; i++) {
-                    const element = arrayIn[i];
-                    if(element){
-                        ret.push(element);
-                    }
-                }
-                return ret;
-            }
-            function swap(array,a,b) {
-                var ret = array.slice(0);
-                var buffer = ret[a];
-                ret[a]=ret[b]
-                ret[b]=buffer;
-                return ret;
-            }
-            function MyGodDoSomethingAboutIt(intext){
+
+            function parseRawFreqs(intext) {
                 var arrayed = intext.split(" ");
-                var ret = [];
-                for (let i = 0; i < arrayed.length; i=i+2) {
+                var ret = {};
+                for (let i = 0; i < arrayed.length; i += 2) {
                     const leter = arrayed[i];
-                    const number = arrayed[i+1].slice(0,4);
-                    ret.push([parseFloat(number)/100,leter]);
+                    const number = arrayed[i + 1].slice(0, 4);
+                    ret[leter] = parseFloat(number) / 100
+                }
+                console.log(ret)
+                return ret;
+            }
+
+            function get_cypher_strip(freq) {
+                let ret = []
+                while (Object.keys(freq).length > 0) {
+                    let char = Object
+                        .keys(freq)
+                        .reduce(
+                            (a, b) => freq[a] > freq[b]
+                            ? a
+                            : b);
+                    delete freq[char]
+                    ret.push(char)
                 }
                 return ret;
             }
         </script>
     </body>
 </html>
-
-
-
-
