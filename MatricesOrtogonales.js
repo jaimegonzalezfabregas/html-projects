@@ -93,7 +93,7 @@ function inverse(matrix) {
 }
 
 function ortogonal(matrix) {
-    return determinant(matrix) != 0 && eq(transpose(matrix), inverse(matrix), 0, 01);
+    return determinant(matrix) != 0 && eq(transpose(matrix), inverse(matrix), 0);
 }
 
 function flaten(matrix) {
@@ -106,7 +106,7 @@ function flaten(matrix) {
     return ret;
 }
 
-function inflate(arr) {
+function squareify(arr) {
     let ret = [];
     let i = 0;
     let side = Math.sqrt(arr.length)
@@ -134,10 +134,10 @@ function getNextMatrix(range, matrix) {
             done = true
         }
     }
-    return inflate(flat)
+    return squareify(flat)
 }
 
-let testMatrix = inflate([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+let testMatrix = squareify([0, 0, 0, 0, 0, 0, 0, 0, 0])
 let progres = 0;
 let range = [-1, 1]
 while (true) {
@@ -152,7 +152,7 @@ while (true) {
             //console.log("hi:", testMatrix)
         }
     } else {
-        testMatrix = inflate([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        testMatrix = squareify([0, 0, 0, 0, 0, 0, 0, 0, 0])
         range[0]--
         range[1]++
         progres = 0;
